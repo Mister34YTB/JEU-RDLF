@@ -1,12 +1,23 @@
 const express = require("express");
 const http = require("http");
+const path = require("path");
 const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static("public")); // ton HTML doit être dans /public
+// Sert les fichiers statiques
+app.use(express.static("public"));
+
+// Routes HTML
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "joueur.html"));
+});
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
 
 // --- ETAT PARTIE ---
 const players = {};          // { socket.id: { name, color } }
@@ -38,36 +49,36 @@ io.on("connection", (socket) => {
     io.emit("playersUpdate", Object.values(players));
   });
 
+  // === JOUEUR -> serveur : buzz ===
   socket.on("buzz", () => {
-  const p = players[socket.id];
-  if (!p) return;
-  if (buzzerLocked) return;
+    const p = players[socket.id];
+    if (!p) return;
+    if (buzzerLocked) return;
 
-  buzzerLocked = true;
-  activeBuzz = socket.id;
+    buzzerLocked = true;
+    activeBuzz = socket.id;
 
-  console.log(`🚨 ${p.name} a buzzé (${p.color}) !`);
+    console.log(`🚨 ${p.name} a buzzé (${p.color}) !`);
 
-  // On envoie l'info à tout le monde
-  io.emit("buzzed", { playerName: p.name, color: p.color });
+    // Envoi à tout le monde
+    io.emit("buzzed", { playerName: p.name, color: p.color });
 
-  // 🔊 Joue le son de buzz chez tous
-  io.emit("playSound", "buzz-sound");
+    // 🔊 Son buzz
+    io.emit("playSound", "buzz-sound");
 
-  // 🔒 Désactive les autres buzzers
-  io.emit("lockOtherBuzzers", socket.id);
+    // 🔒 Désactiver les autres
+    io.emit("lockOtherBuzzers", socket.id);
 
-  // Règle des 5 secondes
-  clearTimeout(buzzTimeout);
-  buzzTimeout = setTimeout(() => {
-    console.log(`⏱ Temps écoulé pour ${p.name}, mauvaise réponse auto`);
-    io.emit("letterError");
-    io.emit("reactivateBuzzers", { exclude: socket.id });
-    buzzerLocked = false;
-    activeBuzz = null;
-  }, 5000);
-});
-
+    // Timer 5s
+    clearTimeout(buzzTimeout);
+    buzzTimeout = setTimeout(() => {
+      console.log(`⏱ Temps écoulé pour ${p.name}, mauvaise réponse auto`);
+      io.emit("letterError");
+      io.emit("reactivateBuzzers", { exclude: socket.id });
+      buzzerLocked = false;
+      activeBuzz = null;
+    }, 5000);
+  });
 
   // === ADMIN -> valide le buzz ===
   socket.on("validateBuzz", () => {
@@ -112,6 +123,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("✅ Serveur lancé sur http://localhost:3000");
+// ✅ Compatible Render (PORT dynamique)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
 });
