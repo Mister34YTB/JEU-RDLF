@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Joueur - RDLF</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      margin:0; background:black; color:white; font-family:sans-serif;
+      display:flex; flex-direction:column; align-items:center;
+    }
+    .container { display:flex; flex-direction:column; gap:10px; }
+    .row { display:flex; justify-content:center; gap:5px; }
+    .box {
+      width:100px; height:100px; background:#FFA500;
+      border:1px solid #555; display:flex; align-items:center; justify-content:center;
+      font-weight:bold; font-size:60px; font-family:'Franklin Gothic Medium','Arial Narrow',Arial,sans-serif;
+    }
+    .white { background:white !important; color:black; }
+    .box.blue { background:#007BFF; color:white; }
+    .box.red { background:red !important; color:white; }
+    #theme {
+      background:#8A2BE2; color:white; padding:15px 30px; font-size:28px;
+      font-weight:bold; border-radius:20px; margin:20px auto;
+      box-shadow:0 0 20px rgba(138,43,226,0.8),0 0 30px rgba(138,43,226,0.6);
+    }
+    #buzz {
+      margin-top:20px; padding:15px 30px; font-size:28px;
+      background:red; color:white; border:none; border-radius:10px;
+      cursor:pointer;
+    }
+    #buzz:disabled { background:gray; cursor:not-allowed; }
+
+    /* --- popup connexion --- */
+    #loginPopup {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center;
+      z-index:1000;
+    }
+    #loginBox {
+      background:white; color:black; padding:20px; border-radius:10px;
+      text-align:center; min-width:300px;
+    }
+    #loginBox h2 { margin-top:0; }
+    #loginBox input, #loginBox button {
+      margin:10px 0; padding:10px; font-size:18px;
+    }
+    .colorChoice {
+      display:flex; justify-content:space-around; margin:10px 0;
+    }
+    .colorChoice label {
+      font-size:18px; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tableau Joueur</h1>
+  <div id="theme"></div>
+  <div class="container" id="grid"></div>
+
+  <div style="margin-top:20px;">
+    <button id="buzz" disabled>🚨 BUZZER 🚨</button>
+  </div>
+
+  <!-- Popup de connexion -->
+  <div id="loginPopup">
+    <div id="loginBox">
+      <h2>Connexion</h2>
+      <input id="popupName" type="text" placeholder="Ton pseudo">
+      <div class="colorChoice">
+        <label><input type="radio" name="color" value="red"> 🔴 Rouge</label>
+        <label><input type="radio" name="color" value="yellow"> 🟡 Jaune</label>
+        <label><input type="radio" name="color" value="blue"> 🔵 Bleu</label>
+      </div>
+<button type="button" onclick="joinGame()">Valider</button>
+    </div>
+  </div>
+
+ <!-- 🎵 Tous les sons -->
+  <audio id="success-sound" src="sounds/wheel-of-fortune-sound-effect_soqbyeVw.wav" preload="auto"></audio>
+  <audio id="error-sound" src="sounds/Lettre I.wav" preload="auto"></audio>
+  <audio id="reveal-sound" src="sounds/wheel-of-fortune-sound-effect_2yl9JNRv.wav" preload="auto"></audio>
+  <audio id="alert-sound" src="sounds/plus de consonne.mp3" preload="auto"></audio>
+  <audio id="resolved-sound" src="sounds/Enigme Resolue.mp3" preload="auto"></audio>
+  <audio id="final-sound-1" src="sounds/Enigme Rapide Resolue.mp3" preload="auto"></audio>
+  <audio id="final-sound-2" src="sounds/Finalgagner.mp3" preload="auto"></audio>
+<audio id="countdown-sound" src="sounds/10secondes.mp3" preload="auto"></audio>
+  <audio id="buzz-sound" src="sounds/wheel-of-fortune-sound-effect_soqbyeVw.wav" preload="auto"></audio>
+
+
+  <script>
+    const socket = io();
+    const buzzBtn = document.getElementById("buzz");
+    let playerName = null;
+    let playerColor = null;
+
+    function joinGame() {
+  const name = document.getElementById("popupName").value.trim() || "Joueur";
+  const color = document.querySelector('input[name="color"]:checked')?.value;
+  if (!color) {
+    alert("Choisis une couleur !");
+    return;
+  }
+  console.log("✅ Tentative d’inscription :", name, color);
+
+  playerName = name;
+  playerColor = color;
+
+  socket.emit("registerPlayer", { name, color });
+
+  document.getElementById("loginPopup").style.display = "none";
+  buzzBtn.disabled = false;
+}
+
+
+    socket.on("boardUpdate", data => {
+  document.getElementById("theme").innerText = data.theme;
+  document.getElementById("grid").innerHTML = data.grid;
+});
+
+
+    buzzBtn.addEventListener("click", () => {
+      if (!playerName) return; // sécurité
+      socket.emit("buzz");
+      buzzBtn.disabled = true;
+    });
+
+    socket.on("resetBuzzers", () => {
+      buzzBtn.disabled = false;
+    });
+// Désactive tous les buzzers sauf celui qui a buzzé
+socket.on("lockOtherBuzzers", (activeId) => {
+  if (socket.id !== activeId) {
+    buzzBtn.disabled = true;
+  }
+});
+
+// Réactive les buzzers sauf celui exclu
+socket.on("reactivateBuzzers", ({ exclude }) => {
+  if (socket.id !== exclude) {
+    buzzBtn.disabled = false;
+  }
+});
+
+    function playSound(id) {
+      const s = document.getElementById(id);
+      if (s) { s.currentTime = 0; s.play(); }
+    }
+
+  // 🎵 Réception des sons
+socket.on("playSound", (id) => {
+  const s = document.getElementById(id);
+  if (s) {
+    s.currentTime = 0;
+    s.play();
+  }
+});
+
+// 🚨 Animation erreur
+socket.on("letterError", () => {
+  const whiteBoxes = document.querySelectorAll('.box.white');
+  whiteBoxes.forEach(box => box.classList.add('red'));
+  setTimeout(() => {
+    whiteBoxes.forEach(box => box.classList.remove('red'));
+  }, 500);
+});
+
+socket.on("startCountdown", () => {
+  const countdownSound = document.getElementById("countdown-sound");
+  if (countdownSound) {
+    countdownSound.currentTime = 0;
+    countdownSound.play();
+  }
+});
+
+
+  </script>
+</body>
+</html>

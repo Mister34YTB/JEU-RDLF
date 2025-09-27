@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Énigmes - La Roue de la Fortune</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin: 20px;
+      font-size: 24px;
+      color: #ffffff;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .box {
+      width: 100px;
+      height: 100px;
+      background-color: #FFA500;
+      border: 1px solid #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 60px;
+      font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    }
+
+    .box.red {
+      background-color: red !important;
+      color: white !important;
+    }
+
+    .white {
+      background-color: white !important;
+      color: black;
+    }
+
+    .box.blue {
+      background-color: #007BFF;
+      color: white;
+      font-weight: bold;
+      font-size: 2em;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      font-size: 30px;
+      margin: 0 5px;
+      background-color: #222;
+      color: white;
+      border: 2px solid #FFD700;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .buttons button:hover {
+      background-color: #FFD700;
+      color: black;
+    }
+
+    #popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #popup-content {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+      font-size: 24px;
+    }
+
+    #popup input {
+      font-size: 24px;
+      padding: 5px;
+      margin-bottom: 10px;
+      width: 80%;
+      text-transform: uppercase;
+    }
+
+    #popup button {
+      font-size: 24px;
+      padding: 10px 20px;
+      margin-top: 10px;
+      background-color: #FFD700;
+      color: black;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #timer {
+      font-size: 30px;
+      margin-left: 20px;
+    }
+   #theme {
+  display: none; /* caché au départ */
+  background-color: #8A2BE2; /* violet vif */
+  color: white;
+  padding: 15px 30px;
+  font-size: 28px;
+  font-weight: bold;
+  border-radius: 20px;
+  text-align: center;
+  margin: 20px auto;
+  box-shadow: 0 0 20px rgba(138, 43, 226, 0.8), 0 0 30px rgba(138, 43, 226, 0.6);
+}
+
+  </style>
+</head>
+
+<body>
+  <div id="consonne-msg" style="position: fixed; top: 10px; left: 10px; font-size: 20px; color: yellow;"></div>
+<div id="voyelle-msg" style="position: fixed; top: 10px; right: 10px; font-size: 20px; color: yellow;"></div>
+
+<div id="alert-popup" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: yellow;
+  color: black;
+  padding: 20px 40px;
+  border-radius: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 10000;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+"></div>
+
+  <audio id="success-sound" src="g:\Régie Fort boyard\Epreuve\wheel-of-fortune-sound-effect_soqbyeVw.wav" preload="auto"></audio>
+  <audio id="error-sound" src="d:\Musique APOAL 2025\ajout 2\Lettre I.wav" preload="auto"></audio>
+  <audio id="reveal-sound" src="g:\Régie Fort boyard\Epreuve\wheel-of-fortune-sound-effect_2yl9JNRv.wav" preload="auto"></audio>
+  <audio id="alert-sound" src="c:\Users\BboyF\Downloads\plus de consonne.mp3" preload="auto"></audio>
+  <audio id="resolved-sound" src="C:\Users\BboyF\Downloads\Enigme Resolue.mp3" preload="auto"></audio>
+  <audio id="final-sound-1" src="C:\Users\BboyF\Downloads\Enigme Rapide Resolue.mp3" preload="auto"></audio>
+<audio id="final-sound-2" src="C:\Users\BboyF\Downloads\Finalgagner.mp3" preload="auto"></audio>
+<audio id="countdown-sound" src="C:\Users\BboyF\Downloads\10secondes.mp3" preload="auto"></audio>
+
+
+
+
+<div id="theme"></div>
+
+  <div class="container" id="grid">
+    <div class="row" id="row0"></div>
+    <div class="row" id="row1"></div>
+    <div class="row" id="row2"></div>
+    <div class="row" id="row3"></div>
+  </div>
+
+  <div class="buttons">
+    <button onclick="setCategory('rapide')">Rapidité</button>
+    <button onclick="setCategory('enigme')">Énigme</button>
+    <button onclick="setCategory('musique')">Musique</button>
+    <button onclick="setCategory('question')">Question</button>
+    <button onclick="setCategory('finale')">Finale</button>
+    <button onclick="resetUsedEnigmes()">🔄 Réinitialiser</button>
+    <div id="timer"></div>
+  </div>
+
+  <div id="solution" style="margin-top: 50px; font-size: 24px; color: #FFD700;"></div>
+
+  <div id="popup">
+    <div id="popup-content">
+      <p>Choisissez 3 consonnes :</p>
+      <input type="text" id="consonnes" maxlength="3" />
+      <p>Choisissez 1 voyelle :</p>
+      <input type="text" id="voyelle" maxlength="1" />
+      <br>
+      <button onclick="submitLetters()">Valider</button>
+    </div>
+  </div>
+
+  <script>
+let countdownInterval = null;
+    const structure = [12, 14, 14, 12];
+    const usedEnigmes = {
+  rapide: [],
+  enigme: [],
+  musique: [],
+  question: [],
+  finale: []
+};
+loadUsedEnigmes();
+
+
+    const enigmesRapidité = [
+      { theme: "SYMBOLE", texte: "LE YIN YANG" },
+      { theme: "FÊTE FORAINE", texte: "LE MAXXIMUM" },
+      { theme: "PERSONNAGE DE FICTION", texte: "JAMES BOND" },
+      { theme: "COCOONING", texte: "UN MASSAGE THAI" },
+      { theme: "EN CUISINE", texte: "DU VERMICELLE" },
+      { theme: "ECRIVAIN/NE", texte: "ROALD DAHL" },
+      { theme: "NOUVELLE TECHNOLOGIE", texte: "INTELLIGENCE ARTIFICIELLE" },
+      { theme: "SCIENCES", texte: "LE KILOWATTHEURE" },
+
+
+      
+    ];
+
+    const enigmesMusique = [
+      { theme: "MUSIQUE", texte: " <WHAT DO YOU MEAN> & <SORRY>" },
+    ];
+
+    const enigmesQuestion = [
+      { theme: "REPLIQUE CULTE", texte: "ET QU'EST-CE QU'ON DIT AU CHAUFFEUR ?" },
+    ];
+
+    const enigmesEnigme = [
+      { theme: "ARTS", texte: "LA NAISSANCE DE VENUS <SANDRO BOTTICELLI>" },
+      { theme: "A LA MAISON", texte: "SE RELAXER DANS SA PISCINE EN JUILLET" },
+      { theme: "SUPER FAMILLE", texte: "LES BLAGUES RELOUS ET RACISTES DE TONTON" }
+    ];
+
+    const enigmesFinale = [
+      { theme: "CELEBRITES", texte: "MICHAEL YOUN" },
+    ];
+
+    let currentFinale = null;
+    let finalePhase = false;
+    let currentCategory = null;
+    let rapidRevealInterval = null;
+    let rapidBoxes = [];
+    let rapidLetters = [];
+    let isRevealing = false;
+
+    function saveUsedEnigmes() {
+  localStorage.setItem('usedEnigmes', JSON.stringify(usedEnigmes));
+}
+function loadUsedEnigmes() {
+  const stored = localStorage.getItem('usedEnigmes');
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    for (const cat in usedEnigmes) {
+      if (parsed[cat]) {
+        usedEnigmes[cat] = parsed[cat];
+      }
+    }
+  }
+}
+
+
+    function initGrid() {
+      for (let i = 0; i < 4; i++) {
+        const row = document.getElementById(`row${i}`);
+        row.innerHTML = '';
+        for (let j = 0; j < structure[i]; j++) {
+          const box = document.createElement('div');
+          box.classList.add('box');
+          row.appendChild(box);
+        }
+      }
+    }
+
+    initGrid();
+
+    function setCategory(category) {
+        resetLetterAlerts(); // ➕ Ajout ici
+  currentCategory = category;
+  finalePhase = (category === 'finale');
+  document.getElementById('reveal-sound').play();
+      currentCategory = category;
+      finalePhase = (category === 'finale');
+      document.getElementById('reveal-sound').play();
+
+      let pool;
+      switch (category) {
+        case 'rapide': pool = enigmesRapidité; break;
+        case 'musique': pool = enigmesMusique; break;
+        case 'question': pool = enigmesQuestion; break;
+        case 'enigme': pool = enigmesEnigme; break;
+        case 'finale': pool = enigmesFinale; break;
+        default: return;
+      }
+
+      // Filtrer les énigmes non encore jouées
+const nonJouees = pool.filter(enigme => !usedEnigmes[category].includes(enigme.texte));
+
+if (nonJouees.length === 0) {
+  alert(`Toutes les énigmes de la catégorie "${category}" ont été jouées.`);
+  return;
+}
+
+// Choisir une énigme au hasard parmi celles non jouées
+const pick = nonJouees[Math.floor(Math.random() * nonJouees.length)];
+usedEnigmes[category].push(pick.texte);
+saveUsedEnigmes();
+
+
+usedEnigmes[category].push(pick.texte); // on marque le texte comme utilisé
+const words = pick.texte.toUpperCase().split(' ');
+      document.getElementById('theme').innerText = `${pick.theme.toUpperCase()}`;
+      document.getElementById('theme').style.display = 'inline-block';
+
+
+      initGrid();
+
+      let currentLine = 0;
+      const linesContent = ['', '', '', ''];
+      for (const word of words) {
+        const tentative = (linesContent[currentLine] + ' ' + word).trim();
+        if (tentative.length <= structure[currentLine]) {
+          linesContent[currentLine] = tentative;
+        } else {
+          currentLine++;
+          if (currentLine >= structure.length) {
+            alert("L'énigme est trop longue pour être affichée.");
+            return;
+          }
+          linesContent[currentLine] = word;
+        }
+      }
+
+      rapidBoxes = [];
+      rapidLetters = [];
+
+      for (let i = 0; i < linesContent.length; i++) {
+        const row = document.getElementById(`row${i}`);
+        const boxesInLine = Array.from(row.children);
+        const letters = linesContent[i].split('');
+        const start = Math.floor((structure[i] - letters.length) / 2);
+        for (let j = 0; j < letters.length; j++) {
+          const letter = letters[j];
+          const box = boxesInLine[start + j];
+          if (letter === ' ') continue;
+          box.classList.add('white');
+          if (letter.match(/[A-Z]/)) {
+            box.innerText = '';
+            box.setAttribute('data-letter', letter);
+            if (category === 'rapide') {
+              rapidBoxes.push(box);
+              rapidLetters.push(letter);
+            }
+          } else {
+            box.innerText = letter;
+            box.style.fontSize = '3.5em';
+            box.style.color = 'black';
+          }
+        }
+      }
+
+      document.getElementById('solution').innerText = `💡 Solution : ${pick.texte}`;
+    }
+
+   function toggleRapidReveal() {
+  if (isRevealing) {
+    clearInterval(rapidRevealInterval);
+    isRevealing = false;
+    return;
+  }
+
+  isRevealing = true;
+
+  const unrevealed = rapidBoxes
+    .map((box, index) => ({ box, letter: rapidLetters[index] }))
+    .filter(item => item.box.innerText === '');
+
+  rapidRevealInterval = setInterval(() => {
+    if (unrevealed.length === 0) {
+      clearInterval(rapidRevealInterval);
+      isRevealing = false;
+      return;
+    }
+
+    const i = Math.floor(Math.random() * unrevealed.length);
+    const { box, letter } = unrevealed.splice(i, 1)[0];
+
+    box.innerText = letter; // ✅ on écrit la lettre
+    // ❌ NE PAS retirer la classe 'white' — ça garde la case blanche
+  }, 1500); // ⏱️ 1 seconde entre chaque lettre
+}
+
+
+    function revealLetters(letters, callback = null) {
+      const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
+      let delay = 0;
+
+      letters.forEach((letter, lIndex) => {
+        const targets = whiteBoxes.filter(box =>
+          box.getAttribute('data-letter') === letter && box.innerText === ''
+        );
+
+        targets.forEach((box, idx) => {
+          setTimeout(() => {
+            box.classList.remove('white');
+            box.classList.add('blue');
+          }, delay);
+
+          setTimeout(() => {
+            box.classList.remove('blue');
+            box.classList.add('white');
+            box.innerText = letter;
+
+            if (
+              lIndex === letters.length - 1 &&
+              idx === targets.length - 1 &&
+              typeof callback === 'function'
+            ) {
+              callback();
+            }
+          }, delay + 600);
+          
+
+          delay += 300;
+        });
+      });
+    }
+
+    function revealAllLetters() {
+      clearInterval(rapidRevealInterval);
+  isRevealing = false;
+  const whiteBoxes = document.querySelectorAll('.box.white');
+  whiteBoxes.forEach(box => {
+    const letter = box.getAttribute('data-letter');
+    if (letter && box.innerText === '') {
+      box.innerText = letter;
+    }
+  });
+
+  resetLetterAlerts(); // ➕ Ajout ici
+}
+
+   function startCountdown() {
+  const timerEl = document.getElementById("timer");
+  let time = 10;
+  timerEl.innerText = `${time}`;
+
+  // Jouer le son
+  const countdownSound = document.getElementById('countdown-sound');
+  if (countdownSound) {
+    countdownSound.currentTime = 0;
+    countdownSound.play();
+  }
+
+  countdownInterval = setInterval(() => {
+    time--;
+    timerEl.innerText = `${time}`;
+
+    if (time === 0) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      timerEl.innerText = '';
+
+      if (countdownSound) {
+        countdownSound.pause();
+        countdownSound.currentTime = 0;
+      }
+
+      const whiteBoxes = document.querySelectorAll('.box.white');
+      whiteBoxes.forEach(box => box.classList.add('red'));
+      document.getElementById('error-sound').play();
+
+      setTimeout(() => {
+        whiteBoxes.forEach(box => box.classList.remove('red'));
+        revealAllLetters();
+        showSolution();
+      }, 500);
+    }
+  }, 1000);
+}
+
+
+    function showPopup() {
+      document.getElementById('popup').style.display = 'flex';
+    }
+
+    function submitLetters() {
+  const consInput = document.getElementById('consonnes').value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const voyInput = document.getElementById('voyelle').value.toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
+  document.getElementById('popup').style.display = 'none';
+  const lettersToReveal = [...consInput, voyInput];
+
+  revealLetters(lettersToReveal, () => {
+  startCountdown();
+});
+}
+
+    document.addEventListener('keydown', function (e) {
+      if (document.activeElement.tagName === 'INPUT') return;
+      const key = e.key.toUpperCase();
+
+      if (currentCategory === 'rapide' && e.code === 'Space') {
+        e.preventDefault();
+        toggleRapidReveal();
+        return;
+      }
+
+    if (e.code === 'Enter') {
+  if (countdownInterval !== null) {
+  clearInterval(countdownInterval);
+  countdownInterval = null;
+  document.getElementById('timer').innerText = '';
+
+  const countdownSound = document.getElementById('countdown-sound');
+  if (countdownSound) {
+    countdownSound.pause();
+    countdownSound.currentTime = 0;
+  }
+}
+  
+
+  if (finalePhase) {
+    const sound1 = document.getElementById('final-sound-1');
+    const sound2 = document.getElementById('final-sound-2');
+
+    if (sound1 && sound2) {
+      sound1.currentTime = 0;
+      sound1.play();
+
+      sound1.onended = () => {
+        sound2.currentTime = 0;
+        sound2.play();
+      };
+    }
+  } else {
+    const resolvedSound = document.getElementById('resolved-sound');
+    if (resolvedSound) {
+      resolvedSound.currentTime = 0;
+      resolvedSound.play();
+    }
+  }
+
+  revealAllLetters();
+  return;
+}
+
+       if (finalePhase && e.code === 'Space') {
+    e.preventDefault();
+    revealLetters(['R', 'S', 'T', 'L', 'N', 'E'], () => {
+      setTimeout(showPopup, 3000);
+    });
+  }
+
+
+      if (!/^[A-Z]$/.test(key) || currentCategory === 'rapide') return;
+
+      const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
+      const alreadyRevealed = whiteBoxes.filter(box => box.getAttribute('data-letter') === key && box.innerText === key);
+      const unrevealed = whiteBoxes.filter(box => box.getAttribute('data-letter') === key && box.innerText === '');
+
+      const successSound = document.getElementById('success-sound');
+      const errorSound = document.getElementById('error-sound');
+
+      if (unrevealed.length > 0) {
+        successSound.play();
+        unrevealed.forEach((box, index) => {
+          setTimeout(() => {
+            box.classList.remove('white');
+            box.classList.add('blue');
+          }, index * 300);
+          // Après avoir révélé la lettre :
+setTimeout(() => {
+  box.classList.remove('blue');
+  box.classList.add('white');
+  box.innerText = key;
+
+  if (index === unrevealed.length - 1) {
+    checkLetterCompletion(); // ➕ ajout ici
+  }
+}, unrevealed.length * 300 + index * 300);
+        });
+      } else if (alreadyRevealed.length > 0) {
+        errorSound.play();
+        alreadyRevealed.forEach(box => {
+          box.classList.add('red');
+          setTimeout(() => {
+            box.classList.remove('red');
+          }, 500);
+        });
+      } else {
+        errorSound.play();
+        whiteBoxes.forEach(box => box.classList.add('red'));
+        setTimeout(() => {
+          whiteBoxes.forEach(box => box.classList.remove('red'));
+        }, 500);
+      }
+    });
+
+    function showSolution() {
+      if (currentFinale && currentFinale.texte) {
+        document.getElementById('solution').innerText = `💡 Solution : ${currentFinale.texte}`;
+      }
+    }
+    function resetUsedEnigmes() {
+  if (confirm("Voulez-vous vraiment réinitialiser toutes les énigmes jouées ?")) {
+    for (const cat in usedEnigmes) {
+      usedEnigmes[cat] = [];
+    }
+    localStorage.removeItem('usedEnigmes');
+    alert("Toutes les énigmes ont été réactivées !");
+  }
+}
+function showTemporaryAlert(message, type) {
+  const popup = document.getElementById('alert-popup');
+  popup.innerText = message;
+  popup.style.display = 'block';
+
+  // 🔊 jouer le son
+  const sound = document.getElementById('alert-sound');
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play();
+  }
+
+  setTimeout(() => {
+    popup.style.display = 'none';
+
+    if (type === 'consonne') {
+      document.getElementById('consonne-msg').innerText = '➤ Plus de consonne';
+    } else if (type === 'voyelle') {
+      document.getElementById('voyelle-msg').innerText = '➤ Plus de voyelle';
+    }
+  }, 3000);
+}
+
+
+function checkLetterCompletion() {
+  const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
+
+  const unrevealed = whiteBoxes.filter(box => box.innerText === '');
+  const remainingLetters = unrevealed.map(box => box.getAttribute('data-letter'));
+
+  const consonnesRestantes = remainingLetters.filter(l => !"AEIOUY".includes(l));
+  const voyellesRestantes = remainingLetters.filter(l => "AEIOUY".includes(l));
+
+  if (consonnesRestantes.length === 0 && !document.getElementById('consonne-msg').innerText) {
+    showTemporaryAlert("Plus de consonne", 'consonne');
+  }
+
+  if (voyellesRestantes.length === 0 && !document.getElementById('voyelle-msg').innerText) {
+    showTemporaryAlert("Plus de voyelle", 'voyelle');
+  }
+}
+function resetLetterAlerts() {
+  document.getElementById('consonne-msg').innerText = '';
+  document.getElementById('voyelle-msg').innerText = '';
+}
+  </script>
+</body>
+</html>
