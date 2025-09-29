@@ -95,32 +95,39 @@
     let role = "spectator"; // valeur par défaut
 
     function joinGame() {
-      const name = document.getElementById("popupName").value.trim() || "Joueur";
-      const color = document.querySelector('input[name="color"]:checked')?.value;
-      if (!color) {
-        alert("Choisis une couleur !");
-        return;
-      }
-
-      playerName = name;
-      playerColor = color;
-
-      // On demande au serveur une inscription
-      socket.emit("registerPlayer", { name, color });
+    const name = document.getElementById("popupName").value.trim() || "Joueur";
+    const color = document.querySelector('input[name="color"]:checked')?.value;
+    if (!color) {
+      alert("Choisis une couleur !");
+      return;
     }
 
-    // Résultat de l'inscription
-    socket.on("registrationResult", ({ role: assignedRole }) => {
-      role = assignedRole;
-      document.getElementById("loginPopup").style.display = "none";
+    playerName = name;
+    playerColor = color;
 
-      if (role === "spectator") {
-        buzzBtn.style.display = "none";
-        alert("Tu es spectateur, tu peux suivre la partie !");
-      } else {
-        buzzBtn.disabled = false;
-      }
-    });
+    // ✅ Fermer le popup immédiatement après clic sur Valider
+    document.getElementById("loginPopup").style.display = "none";
+
+    // On garde le buzzer désactivé jusqu'à la réponse du serveur
+    buzzBtn.disabled = true;
+
+    // Demande d'inscription au serveur
+    socket.emit("registerPlayer", { name, color });
+  }
+
+  // Résultat de l'inscription (joueur ou spectateur)
+  socket.on("registrationResult", ({ role: assignedRole }) => {
+    role = assignedRole;
+
+    if (role === "spectator") {
+      // Spectateur : pas de buzzer
+      buzzBtn.style.display = "none";
+      alert("Tu es spectateur, tu peux suivre la partie !");
+    } else {
+      // Joueur : activer le buzzer
+      buzzBtn.disabled = false;
+    }
+  });
 
     socket.on("boardUpdate", data => {
       document.getElementById("theme").innerText = data.theme;
