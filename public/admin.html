@@ -725,29 +725,15 @@ function playSound(id) {
 
 
   // affiche la liste des joueurs
-socket.on("playersUpdate", (players) => {
+ socket.on("playersUpdate", (players) => {
   const listDiv = document.getElementById("playersList");
-
-  // Sépare joueurs et spectateurs
-  const activePlayers = players.filter(p => p.role === "player");
-  const spectators = players.filter(p => p.role === "spectator");
-
-  // Construire la liste des joueurs
-  const playersHtml = activePlayers.map(p =>
-    `<div style="color:${p.color || 'white'}; font-weight:bold;" id="player-${p.name}">
+  listDiv.innerHTML = players.map(p =>
+    `<div style="color:${p.color}; font-weight:bold;" id="player-${p.name}">
        ${p.name}
        <span class="buzz-controls"></span>
      </div>`
   ).join("");
-
-  // Affiche le nombre de spectateurs
-  const spectatorsHtml = `<div style="margin-top:10px; font-size:16px; color:#ccc;">
-     👀 Spectateurs : ${spectators.length}
-  </div>`;
-
-  listDiv.innerHTML = playersHtml + spectatorsHtml;
 });
-
 
   // fond de couleur quand buzz
   socket.on("buzzed", ({ playerName, color }) => {
