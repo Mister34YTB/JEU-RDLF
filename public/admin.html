@@ -506,32 +506,23 @@ function showPopup() {
   document.getElementById('popup').style.display = 'flex';
 }
 
-
 function submitLetters() {
-  const consInput = document.getElementById('consonnes').value
-    .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-  const voyInput = document.getElementById('voyelle').value
-    .toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
+  const consInput = document.getElementById('consonnes').value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const voyInput = document.getElementById('voyelle').value.toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
   document.getElementById('popup').style.display = 'none';
   const lettersToReveal = [...consInput, voyInput];
 
   const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
-  const matches = whiteBoxes.filter(
-    box => lettersToReveal.includes(box.getAttribute('data-letter'))
-  );
+  const matches = whiteBoxes.filter(box => lettersToReveal.includes(box.getAttribute('data-letter')));
 
   if (matches.length === 0) {
-    // aucune lettre trouvée
+    // ❌ aucune lettre trouvée → erreur directe
     triggerLetterError();
-    setTimeout(() => startCountdown(), 1000);
+    setTimeout(() => startCountdown(), 1000); // on attend un peu pour lancer le chrono
   } else {
+    // ✅ il y a des lettres → on révèle normalement
     revealLetters(lettersToReveal, () => {
-      if (finalePhase) {
-        // en finale → petit délai pour laisser apparaître la dernière lettre
-        setTimeout(() => startCountdown(), 800);
-      } else {
-        startCountdown();
-      }
+      startCountdown(); // chrono après la dernière lettre
     });
   }
 }
