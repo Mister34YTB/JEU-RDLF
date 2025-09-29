@@ -588,12 +588,23 @@ document.addEventListener('keydown', function (e) {
     return;
   }
 
-  if (finalePhase && e.code === 'Space') {
-    e.preventDefault();
-    revealLetters(['R', 'S', 'T', 'L', 'N', 'E'], () => {
-      setTimeout(showPopup, 3000);
-    });
-  }
+ if (finalePhase && e.code === 'Space') {
+  e.preventDefault();
+  const lettresFinales = ['R', 'S', 'T', 'L', 'N', 'E'];
+
+  revealLetters(lettresFinales, () => {
+    // Qu'il y ait des lettres ou pas → le popup s'affiche quand même
+    setTimeout(showPopup, 3000);
+  });
+
+  // sécurité au cas où revealLetters ne trouve rien → forcer le popup
+  setTimeout(() => {
+    if (document.getElementById('popup').style.display === 'none') {
+      showPopup();
+    }
+  }, 3500);
+}
+
 
   if (!/^[A-Z]$/.test(key) || currentCategory === 'rapide') return;
 
