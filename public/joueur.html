@@ -72,11 +72,11 @@
         <label><input type="radio" name="color" value="yellow"> 🟡 Jaune</label>
         <label><input type="radio" name="color" value="blue"> 🔵 Bleu</label>
       </div>
-<button type="button" onclick="joinGame()">Valider</button>
+      <button type="button" onclick="joinGame()">Valider</button>
     </div>
   </div>
 
- <!-- 🎵 Tous les sons -->
+  <!-- 🎵 Tous les sons -->
   <audio id="success-sound" src="sounds/wheel-of-fortune-sound-effect_soqbyeVw.wav" preload="auto"></audio>
   <audio id="error-sound" src="sounds/Lettre I.wav" preload="auto"></audio>
   <audio id="reveal-sound" src="sounds/wheel-of-fortune-sound-effect_2yl9JNRv.wav" preload="auto"></audio>
@@ -84,96 +84,97 @@
   <audio id="resolved-sound" src="sounds/Enigme Resolue.mp3" preload="auto"></audio>
   <audio id="final-sound-1" src="sounds/Enigme Rapide Resolue.mp3" preload="auto"></audio>
   <audio id="final-sound-2" src="sounds/Finalgagner.mp3" preload="auto"></audio>
-<audio id="countdown-sound" src="sounds/10secondes.mp3" preload="auto"></audio>
+  <audio id="countdown-sound" src="sounds/10secondes.mp3" preload="auto"></audio>
   <audio id="buzz-sound" src="sounds/wheel-of-fortune-sound-effect_soqbyeVw.wav" preload="auto"></audio>
-
 
   <script>
     const socket = io();
     const buzzBtn = document.getElementById("buzz");
     let playerName = null;
     let playerColor = null;
+    let role = "spectator"; // valeur par défaut
 
     function joinGame() {
-  const name = document.getElementById("popupName").value.trim() || "Joueur";
-  const color = document.querySelector('input[name="color"]:checked')?.value;
-  if (!color) {
-    alert("Choisis une couleur !");
-    return;
-  }
-  console.log("✅ Tentative d’inscription :", name, color);
+      const name = document.getElementById("popupName").value.trim() || "Joueur";
+      const color = document.querySelector('input[name="color"]:checked')?.value;
+      if (!color) {
+        alert("Choisis une couleur !");
+        return;
+      }
 
-  playerName = name;
-  playerColor = color;
+      playerName = name;
+      playerColor = color;
 
-  socket.emit("registerPlayer", { name, color });
+      // On demande au serveur une inscription
+      socket.emit("registerPlayer", { name, color });
+    }
 
-  document.getElementById("loginPopup").style.display = "none";
-  buzzBtn.disabled = false;
-}
+    // Résultat de l'inscription
+    socket.on("registrationResult", ({ role: assignedRole }) => {
+      role = assignedRole;
+      document.getElementById("loginPopup").style.display = "none";
 
+      if (role === "spectator") {
+        buzzBtn.style.display = "none";
+        alert("Tu es spectateur, tu peux suivre la partie !");
+      } else {
+        buzzBtn.disabled = false;
+      }
+    });
 
     socket.on("boardUpdate", data => {
-  document.getElementById("theme").innerText = data.theme;
-  document.getElementById("grid").innerHTML = data.grid;
-});
-
+      document.getElementById("theme").innerText = data.theme;
+      document.getElementById("grid").innerHTML = data.grid;
+    });
 
     buzzBtn.addEventListener("click", () => {
-      if (!playerName) return; // sécurité
+      if (!playerName || role !== "player") return;
       socket.emit("buzz");
       buzzBtn.disabled = true;
     });
 
     socket.on("resetBuzzers", () => {
-      buzzBtn.disabled = false;
+      if (role === "player") buzzBtn.disabled = false;
     });
-// Désactive tous les buzzers sauf celui qui a buzzé
-socket.on("lockOtherBuzzers", (activeId) => {
-  if (socket.id !== activeId) {
-    buzzBtn.disabled = true;
-  }
-});
 
-// Réactive les buzzers sauf celui exclu
-socket.on("reactivateBuzzers", ({ exclude }) => {
-  if (socket.id !== exclude) {
-    buzzBtn.disabled = false;
-  }
-});
+    socket.on("lockOtherBuzzers", (activeId) => {
+      if (socket.id !== activeId && role === "player") {
+        buzzBtn.disabled = true;
+      }
+    });
 
-    function playSound(id) {
+    socket.on("reactivateBuzzers", ({ exclude }) => {
+      if (socket.id !== exclude && role === "player") {
+        buzzBtn.disabled = false;
+      }
+    });
+
+    // Sons
+    socket.on("playSound", (id) => {
       const s = document.getElementById(id);
-      if (s) { s.currentTime = 0; s.play(); }
-    }
+      if (s) {
+        s.currentTime = 0;
+        s.play();
+      }
+    });
 
-  // 🎵 Réception des sons
-socket.on("playSound", (id) => {
-  const s = document.getElementById(id);
-  if (s) {
-    s.currentTime = 0;
-    s.play();
-  }
-});
+    // Erreur lettre
+    socket.on("letterError", () => {
+      const whiteBoxes = document.querySelectorAll('.box.white');
+      whiteBoxes.forEach(box => box.classList.add('red'));
+      setTimeout(() => {
+        whiteBoxes.forEach(box => box.classList.remove('red'));
+      }, 500);
+    });
 
-// 🚨 Animation erreur
-socket.on("letterError", () => {
-  const whiteBoxes = document.querySelectorAll('.box.white');
-  whiteBoxes.forEach(box => box.classList.add('red'));
-  setTimeout(() => {
-    whiteBoxes.forEach(box => box.classList.remove('red'));
-  }, 500);
-});
-
-socket.on("startCountdown", () => {
-  const countdownSound = document.getElementById("countdown-sound");
-  if (countdownSound) {
-    countdownSound.currentTime = 0;
-    countdownSound.play();
-  }
-});
-
-
+    // Compte à rebours
+    socket.on("startCountdown", () => {
+      const countdownSound = document.getElementById("countdown-sound");
+      if (countdownSound) {
+        countdownSound.currentTime = 0;
+        countdownSound.play();
+      }
+    });
   </script>
 </body>
 </html>
