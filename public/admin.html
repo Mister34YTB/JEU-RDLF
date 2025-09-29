@@ -278,7 +278,7 @@ const enigmesRapidité = [
     ];
 
     const enigmesFinale = [
-      { theme: "MÉTIER", texte: "PROF" },
+      { theme: "MÉTIER", texte: "DACTYLOGRAPHE" },
     ];
 
 let currentFinale = null;
@@ -526,7 +526,29 @@ function submitLetters() {
     });
   }
 }
+function submitLetters() {
+  const consInput = document.getElementById('consonnes').value
+    .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const voyInput = document.getElementById('voyelle').value
+    .toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
+  document.getElementById('popup').style.display = 'none';
+  const lettersToReveal = [...consInput, voyInput];
 
+  const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
+  const matches = whiteBoxes.filter(
+    box => lettersToReveal.includes(box.getAttribute('data-letter'))
+  );
+
+  if (matches.length === 0) {
+    // aucune lettre trouvée
+    triggerLetterError();
+    setTimeout(() => startCountdown(), 1000);
+  } else {
+    revealLetters(lettersToReveal, () => {
+      startCountdown();
+    });
+  }
+}
 
 
 function startCountdown() {
@@ -588,26 +610,12 @@ document.addEventListener('keydown', function (e) {
     return;
   }
 
- if (finalePhase && e.code === 'Space') {
-  e.preventDefault();
-  const lettresFinales = ['R', 'S', 'T', 'L', 'N', 'E'];
-
-  let lettresTrouvees = false;
-
-  revealLetters(lettresFinales, () => {
-    lettresTrouvees = true;
-    setTimeout(showPopup, 3000);
-  });
-
-  // Sécurité : si aucune lettre trouvée → quand même afficher le popup
-  setTimeout(() => {
-    if (!lettresTrouvees) {
-      showPopup();
-    }
-  }, 1000);
-}
-
-
+  if (finalePhase && e.code === 'Space') {
+    e.preventDefault();
+    revealLetters(['R', 'S', 'T', 'L', 'N', 'E'], () => {
+      setTimeout(showPopup, 3000);
+    });
+  }
 
   if (!/^[A-Z]$/.test(key) || currentCategory === 'rapide') return;
 
