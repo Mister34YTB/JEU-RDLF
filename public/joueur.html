@@ -113,17 +113,12 @@
       socket.emit("registerPlayer", { name, color });
     }
 
-    function joinAsSpectator() {
-      const name = document.getElementById("popupName").value.trim() || "Spectateur";
-      playerName = name;
-      playerColor = null;
-      role = "spectator";
+   function joinAsSpectator() {
+  const name = document.getElementById("popupName").value.trim() || "Spectateur";
+  socket.emit("registerPlayer", { name, role: "spectator" });
+  document.getElementById("loginPopup").style.display = "none";
+}
 
-      document.getElementById("loginPopup").style.display = "none";
-      buzzBtn.style.display = "none";
-
-      socket.emit("registerSpectator", { name });
-    }
 
     socket.on("boardUpdate", data => {
       document.getElementById("theme").innerText = data.theme;
