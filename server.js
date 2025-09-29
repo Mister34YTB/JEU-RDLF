@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Sert les fichiers statiques
+// Sert les fichiers statiques (HTML, JS, CSS dans /public)
 app.use(express.static("public"));
 
 // Routes HTML
@@ -20,7 +20,7 @@ app.get("/admin", (req, res) => {
 });
 
 // --- ETAT PARTIE ---
-const players = {};          // { socket.id: { name, color } }
+const players = {};          // { socket.id: { name, color?, role } }
 let buzzerLocked = false;    // un seul buzz actif à la fois
 let activeBuzz = null;       // socket.id du joueur qui a buzzé
 let buzzTimeout = null;      // timer 5s
@@ -41,18 +41,24 @@ io.on("connection", (socket) => {
   socket.on("letterError", () => io.emit("letterError"));
   socket.on("startCountdown", () => io.emit("startCountdown"));
 
-  // === JOUEUR -> serveur : inscription ===
-  socket.on("registerPlayer", ({ name, color }) => {
-    if (!name || !color) return;
-    players[socket.id] = { name, color };
-    console.log(`✅ Joueur inscrit : ${name} (${color})`);
+  // === JOUEUR ou spectateur -> serveur : inscription ===
+  socket.on("registerPlayer", ({ name, color, role }) => {
+    if (role === "spectator") {
+      players[socket.id] = { name, role: "spectator" };
+      console.log(`👀 Spectateur inscrit : ${name}`);
+    } else {
+      if (!color) return; // sécurité
+      players[socket.id] = { name, color, role: "player" };
+      console.log(`✅ Joueur inscrit : ${name} (${color})`);
+    }
+
     io.emit("playersUpdate", Object.values(players));
   });
 
   // === JOUEUR -> serveur : buzz ===
   socket.on("buzz", () => {
     const p = players[socket.id];
-    if (!p) return;
+    if (!p || p.role !== "player") return; // spectateurs ne buzzent pas
     if (buzzerLocked) return;
 
     buzzerLocked = true;
@@ -116,7 +122,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const p = players[socket.id];
     if (p) {
-      console.log(`❌ ${p.name} s’est déconnecté`);
+      console.log(`❌ ${p.name} (${p.role}) s’est déconnecté`);
       delete players[socket.id];
       io.emit("playersUpdate", Object.values(players));
     }
