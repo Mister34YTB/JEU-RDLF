@@ -250,10 +250,10 @@ const usedEnigmes = {
 loadUsedEnigmes();
 
 const enigmesRapidité = [
-      { theme: "ACTUALITES", texte: "LE GP EXPLORER" },
+      { theme: "ACTUALITE", texte: "LE GP EXPLORER" },
       { theme: "SUD OUEST", texte: "LA PENA BAIONA" },
-      { theme: "BONJ OUR !", texte: "GUTEN TAG" },
-      { theme: "DESSINS ANIMES", texte: "LES MINIJUSTICIERS" },
+      { theme: "BONOUR !", texte: "GUTEN TAG" },
+      { theme: "DESSINS ANIMEES", texte: "LES MINIJUSTICIERS" },
       { theme: "CHOREGRAPHIE", texte: "FIESTA BOUM BOUM" },
       { theme: "INSOLITE", texte: "LE CHAMPIONNAT DU MONDE DE PET" },
       { theme: "SUPERSTITION", texte: "TOUCHER L'AVION AVEC SA MAIN" },
@@ -278,7 +278,7 @@ const enigmesRapidité = [
     ];
 
     const enigmesFinale = [
-      { theme: "CELEBRITES", texte: "GOTYE" },
+      { theme: "CELEBRITE", texte: "GOTYE" },
     ];
 
 let currentFinale = null;
@@ -506,27 +506,30 @@ function showPopup() {
   document.getElementById('popup').style.display = 'flex';
 }
 
+
 function submitLetters() {
-  const consInput = document.getElementById('consonnes').value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-  const voyInput = document.getElementById('voyelle').value.toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
+  const consInput = document.getElementById('consonnes').value
+    .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const voyInput = document.getElementById('voyelle').value
+    .toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
   document.getElementById('popup').style.display = 'none';
   const lettersToReveal = [...consInput, voyInput];
 
   const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
-  const matches = whiteBoxes.filter(box => lettersToReveal.includes(box.getAttribute('data-letter')));
+  const matches = whiteBoxes.filter(
+    box => lettersToReveal.includes(box.getAttribute('data-letter'))
+  );
 
   if (matches.length === 0) {
-    // ❌ aucune lettre trouvée → erreur directe
+    // aucune lettre trouvée
     triggerLetterError();
-    setTimeout(() => startCountdown(), 1000); // on attend un peu pour lancer le chrono
+    setTimeout(() => startCountdown(), 1000);
   } else {
-    // ✅ il y a des lettres → on révèle normalement
     revealLetters(lettersToReveal, () => {
-      startCountdown(); // chrono après la dernière lettre
+      startCountdown();
     });
   }
 }
-
 
 
 function startCountdown() {
