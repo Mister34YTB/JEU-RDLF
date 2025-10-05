@@ -166,13 +166,15 @@
     });
 
     // Compte à rebours
-    socket.on("startCountdown", () => {
-      const countdownSound = document.getElementById("countdown-sound");
-      if (countdownSound) {
-        countdownSound.currentTime = 0;
-        countdownSound.play();
-      }
-    });
+   socket.on("startCountdown", () => {
+  console.log("⏱️ Compte à rebours reçu !");
+  const countdownSound = document.getElementById("countdown-sound");
+  if (countdownSound) {
+    countdownSound.currentTime = 0;
+    countdownSound.play();
+  }
+});
+
   </script>
 </body>
 </html>

@@ -7,7 +7,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Sert les fichiers statiques (HTML, JS, CSS dans /public)
 app.use(express.static("public"));
 
 // Routes HTML
@@ -19,27 +18,32 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
-// --- ETAT PARTIE ---
-const players = {};          // { socket.id: { name, color?, role } }
-let buzzerLocked = false;    // un seul buzz actif à la fois
-let activeBuzz = null;       // socket.id du joueur qui a buzzé
-let buzzTimeout = null;      // timer 5s
+// --- ÉTAT DE LA PARTIE ---
+const players = {}; // { socket.id: { name, color?, role } }
+let buzzerLocked = false;
+let activeBuzz = null;
+let buzzTimeout = null;
 
 io.on("connection", (socket) => {
-  console.log("🔗 Un client s’est connecté", socket.id);
+  console.log("🔗 Nouveau client :", socket.id);
 
-  // === ADMIN -> tous : mise à jour du tableau ===
+  // ======== ADMIN : Mise à jour du plateau ========
   socket.on("updateBoard", (data) => {
-    console.log("📢 Mise à jour du tableau :", data.theme);
+    console.log(`📢 Thème: ${data.theme}`);
     io.emit("boardUpdate", data);
   });
 
-  // === Relais events généraux ===
+  // === Relais des actions globales ===
   socket.on("revealLetters", (letters) => io.emit("revealLetters", letters));
   socket.on("revealAll", () => io.emit("revealAll"));
   socket.on("playSound", (id) => io.emit("playSound", id));
   socket.on("letterError", () => io.emit("letterError"));
-  socket.on("startCountdown", () => io.emit("startCountdown"));
+
+  // === Compte à rebours global ===
+  socket.on("startCountdown", () => {
+    console.log("⏱️ Début du compte à rebours");
+    io.emit("startCountdown");
+  });
 
   // === JOUEUR ou spectateur -> serveur : inscription ===
   socket.on("registerPlayer", ({ name, color, role }) => {
@@ -47,7 +51,7 @@ io.on("connection", (socket) => {
       players[socket.id] = { name, role: "spectator" };
       console.log(`👀 Spectateur inscrit : ${name}`);
     } else {
-      if (!color) return; // sécurité
+      if (!color) return;
       players[socket.id] = { name, color, role: "player" };
       console.log(`✅ Joueur inscrit : ${name} (${color})`);
     }
@@ -55,27 +59,19 @@ io.on("connection", (socket) => {
     io.emit("playersUpdate", Object.values(players));
   });
 
-  // === JOUEUR -> serveur : buzz ===
+  // === Buzz ===
   socket.on("buzz", () => {
     const p = players[socket.id];
-    if (!p || p.role !== "player") return; // spectateurs ne buzzent pas
-    if (buzzerLocked) return;
+    if (!p || p.role !== "player" || buzzerLocked) return;
 
     buzzerLocked = true;
     activeBuzz = socket.id;
 
     console.log(`🚨 ${p.name} a buzzé (${p.color}) !`);
-
-    // Envoi à tout le monde
     io.emit("buzzed", { playerName: p.name, color: p.color });
-
-    // 🔊 Son buzz
     io.emit("playSound", "buzz-sound");
-
-    // 🔒 Désactiver les autres
     io.emit("lockOtherBuzzers", socket.id);
 
-    // Timer 5s
     clearTimeout(buzzTimeout);
     buzzTimeout = setTimeout(() => {
       console.log(`⏱ Temps écoulé pour ${p.name}, mauvaise réponse auto`);
@@ -86,30 +82,28 @@ io.on("connection", (socket) => {
     }, 5000);
   });
 
-  // === ADMIN -> valide le buzz ===
+  // === ADMIN : Validation du buzz ===
   socket.on("validateBuzz", () => {
-    if (activeBuzz) {
-      console.log(`✅ Réponse validée pour ${players[activeBuzz]?.name}`);
-    }
+    if (activeBuzz) console.log(`✅ Bonne réponse pour ${players[activeBuzz]?.name}`);
     clearTimeout(buzzTimeout);
     buzzerLocked = false;
     activeBuzz = null;
-    io.emit("resetBuzzers"); // tout le monde réactivé
+    io.emit("resetBuzzers");
   });
 
-  // === ADMIN -> invalide le buzz ===
+  // === ADMIN : Mauvaise réponse ===
   socket.on("invalidateBuzz", () => {
     if (activeBuzz) {
-      console.log(`❌ Mauvaise réponse forcée pour ${players[activeBuzz]?.name}`);
+      console.log(`❌ Mauvaise réponse pour ${players[activeBuzz]?.name}`);
       io.emit("letterError");
-      io.emit("reactivateBuzzers", { exclude: activeBuzz }); // réactiver sauf le fautif
+      io.emit("reactivateBuzzers", { exclude: activeBuzz });
     }
     clearTimeout(buzzTimeout);
     buzzerLocked = false;
     activeBuzz = null;
   });
 
-  // === ADMIN -> reset buzzers ===
+  // === ADMIN : Reset des buzzers ===
   socket.on("resetBuzzers", () => {
     buzzerLocked = false;
     activeBuzz = null;
@@ -129,8 +123,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Compatible Render (PORT dynamique)
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
+  console.log(`✅ Serveur en ligne sur http://localhost:${PORT}`);
 });
