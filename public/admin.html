@@ -250,10 +250,10 @@ const usedEnigmes = {
 loadUsedEnigmes();
 
 const enigmesRapidité = [
-      { theme: "ACTUALITE", texte: "LE GP EXPLORER" },
+      { theme: "ACTUALITES", texte: "LE GP EXPLORER" },
       { theme: "SUD OUEST", texte: "LA PENA BAIONA" },
-      { theme: "BONOUR !", texte: "GUTEN TAG" },
-      { theme: "DESSINS ANIMEES", texte: "LES MINIJUSTICIERS" },
+      { theme: "BONJ OUR !", texte: "GUTEN TAG" },
+      { theme: "DESSINS ANIMES", texte: "LES MINIJUSTICIERS" },
       { theme: "CHOREGRAPHIE", texte: "FIESTA BOUM BOUM" },
       { theme: "INSOLITE", texte: "LE CHAMPIONNAT DU MONDE DE PET" },
       { theme: "SUPERSTITION", texte: "TOUCHER L'AVION AVEC SA MAIN" },
@@ -278,7 +278,7 @@ const enigmesRapidité = [
     ];
 
     const enigmesFinale = [
-      { theme: "CELEBRITE", texte: "GOTYE" },
+      { theme: "CELEBRITES", texte: "GOTYE" },
     ];
 
 let currentFinale = null;
@@ -526,29 +526,7 @@ function submitLetters() {
     });
   }
 }
-function submitLetters() {
-  const consInput = document.getElementById('consonnes').value
-    .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-  const voyInput = document.getElementById('voyelle').value
-    .toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
-  document.getElementById('popup').style.display = 'none';
-  const lettersToReveal = [...consInput, voyInput];
 
-  const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
-  const matches = whiteBoxes.filter(
-    box => lettersToReveal.includes(box.getAttribute('data-letter'))
-  );
-
-  if (matches.length === 0) {
-    // aucune lettre trouvée
-    triggerLetterError();
-    setTimeout(() => startCountdown(), 1000);
-  } else {
-    revealLetters(lettersToReveal, () => {
-      startCountdown();
-    });
-  }
-}
 
 
 function startCountdown() {
@@ -573,7 +551,6 @@ function startCountdown() {
     }
   }, 1000);
 }
-
 
 
 
