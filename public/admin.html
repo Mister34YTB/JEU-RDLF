@@ -543,7 +543,7 @@ function startCountdown() {
     countdownSound.play();
   }
 
-  socket.emit("startCountdown"); // prévenir les joueurs
+  socket.emit("startCountdown"); // 🔥 envoi l’événement à tous les joueurs
 
   countdownInterval = setInterval(() => {
     timeLeft--;
@@ -554,6 +554,7 @@ function startCountdown() {
     }
   }, 1000);
 }
+
 
 
 
