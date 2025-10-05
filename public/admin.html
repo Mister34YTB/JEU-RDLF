@@ -512,27 +512,36 @@ function submitLetters() {
     .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
   const voyInput = document.getElementById('voyelle').value
     .toUpperCase().replace(/[^A-Z]/g, '').charAt(0);
-  document.getElementById('popup').style.display = 'none';
-  const lettersToReveal = [...consInput, voyInput];
 
+  document.getElementById('popup').style.display = 'none';
+
+  const lettersToReveal = [...consInput, voyInput];
   const whiteBoxes = Array.from(document.querySelectorAll('.box.white'));
   const matches = whiteBoxes.filter(
     box => lettersToReveal.includes(box.getAttribute('data-letter'))
   );
 
+  // ✅ Cas 1 : aucune lettre trouvée
   if (matches.length === 0) {
-    // aucune lettre trouvée
     triggerLetterError();
+    // attendre un peu avant de lancer le chrono
     setTimeout(() => startCountdown(), 1000);
-  } else {
+  }
+  // ✅ Cas 2 : lettres trouvées → on révèle tout puis lance le chrono
+  else {
+    let revealedCount = 0;
     revealLetters(lettersToReveal, () => {
-      startCountdown();
+      revealedCount++;
+      // petit délai pour s’assurer que tout est affiché visuellement
+      setTimeout(() => startCountdown(), 500);
     });
   }
 }
 
 
+
 function startCountdown() {
+  clearInterval(countdownInterval); // ✅ évite double chrono
   let timeLeft = 10;
   const timerEl = document.getElementById("timer");
   timerEl.innerText = timeLeft;
@@ -543,7 +552,7 @@ function startCountdown() {
     countdownSound.play();
   }
 
-  socket.emit("startCountdown"); // 🔥 envoi l’événement à tous les joueurs
+  socket.emit("startCountdown"); // 🔥 envoi à tous les joueurs
 
   countdownInterval = setInterval(() => {
     timeLeft--;
@@ -554,6 +563,7 @@ function startCountdown() {
     }
   }, 1000);
 }
+
 
 
 
