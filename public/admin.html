@@ -203,7 +203,7 @@
     <button onclick="setCategory('question')">Question</button>
     <button onclick="setCategory('finale')">Finale</button>
     <button onclick="resetUsedEnigmes()">🔄 Réinitialiser</button>
-    <button onclick="enterCreationMode()">✏️ Créer une énigme</button>
+    <button onclick="openCreationPopup()">✏️ Créer une énigme</button>
 
 
     <div id="timer"></div>
@@ -234,6 +234,77 @@
   max-width:250px;
 ">
 </div>
+
+<!-- 🧩 POPUP DE CREATION D'ENIGME -->
+<div id="creation-popup" style="
+  display:none;
+  position:fixed;
+  top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.7);
+  z-index:999999;
+  justify-content:center;
+  align-items:center;
+">
+  <div style="
+    background:black;
+    border:2px solid #FFD700;
+    border-radius:15px;
+    padding:20px;
+    color:white;
+    width:500px;
+    text-align:center;
+  ">
+    <h2>Créer une énigme</h2>
+
+    <label>Thème :</label><br>
+    <input id="creation-theme" type="text" placeholder="Ex : ANIMAUX" style="
+      width:80%; padding:10px; font-size:20px; margin:5px;
+      text-transform:uppercase;
+    "><br>
+
+    <label>Catégorie :</label><br>
+    <select id="creation-category" style="
+      width:80%; padding:10px; font-size:20px; margin:5px;
+    ">
+      <option value="rapide">Rapidité</option>
+      <option value="enigme">Énigme</option>
+      <option value="musique">Musique</option>
+      <option value="question">Question</option>
+      <option value="finale">Finale</option>
+    </select>
+
+    <p style="font-size:18px; margin-top:10px;">
+      Cliquez dans la grille pour écrire la phrase.
+    </p>
+
+    <button onclick="saveEnigmaToServer()" style="
+      margin-top:15px;
+      padding:10px 20px;
+      background:#28a745;
+      color:white;
+      font-size:22px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+    ">
+      💾 ENREGISTRER
+    </button>
+
+    <button onclick="closeCreationPopup()" style="
+      margin-top:10px;
+      padding:10px 20px;
+      background:#444;
+      color:white;
+      font-size:22px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+    ">
+      ✖ Annuler
+    </button>
+  </div>
+</div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 
@@ -782,25 +853,7 @@ function invalidateBuzz(playerName) {
 let creationMode = false;
 let createdLetters = Array(4).fill(null).map(() => []);
 
-function enterCreationMode() {
-    creationMode = true;
-    document.getElementById("theme").style.display = "none";
-    document.getElementById("solution").innerText = "";
-    resetLetterAlerts();
-    initGrid();
 
-    // Efface les attributs data-letter
-    document.querySelectorAll(".box").forEach(box => {
-        box.classList.add("white");
-        box.innerText = "";
-        box.removeAttribute("data-letter");
-
-        // Ajoute le clic pour écrire une lettre
-        box.onclick = () => editBox(box);
-    });
-
-    showSaveButton();
-}
 
 function editBox(box) {
     const letter = prompt("Entrez une lettre (laisser vide pour supprimer)");
@@ -819,70 +872,81 @@ function editBox(box) {
     box.setAttribute("data-letter", clean);
 }
 
-function showSaveButton() {
-    if (document.getElementById("save-creation")) return;
+/* 🧩 AFFICHER LA POPUP */
+function openCreationPopup() {
+    creationMode = true;
+    document.getElementById("creation-theme").value = "";
+    document.getElementById("creation-popup").style.display = "flex";
 
-    const btn = document.createElement("button");
-    btn.id = "save-creation";
-    btn.innerText = "💾 ENREGISTRER L'ÉNIGME";
-    btn.style = "padding:15px;font-size:25px;background:#28a745;color:white;border-radius:10px;margin-top:20px;";
-    btn.onclick = saveEnigma;
+    initGrid();
 
-    document.body.appendChild(btn);
+    document.querySelectorAll(".box").forEach(box => {
+        box.classList.add("white");
+        box.innerText = "";
+        box.removeAttribute("data-letter");
+        box.onclick = () => editBox(box);
+    });
 }
 
-function saveEnigma() {
-    const category = prompt(
-        "Choisissez une catégorie :\n" +
-        "rapide / enigme / question / musique / finale"
-    );
+/* 🧩 FERMER LA POPUP */
+function closeCreationPopup() {
+    creationMode = false;
+    document.getElementById("creation-popup").style.display = "none";
+}
 
-    const valid = ["rapide", "enigme", "question", "musique", "finale"];
+/* 🧩 ENREGISTRER L'ÉNIGME DANS LE SERVEUR */
+function saveEnigmaToServer() {
+    const theme = document.getElementById("creation-theme").value.trim().toUpperCase();
+    const category = document.getElementById("creation-category").value;
 
-    if (!valid.includes(category)) {
-        alert("Catégorie invalide !");
+    if (!theme) {
+        alert("Veuillez entrer un thème !");
         return;
     }
 
-    const letters = [];
-    const rows = [12, 14, 14, 12];
-
+    const lines = [];
     document.querySelectorAll(".row").forEach(row => {
-        let rowText = "";
+        let textRow = "";
         row.querySelectorAll(".box").forEach(box => {
             const l = box.getAttribute("data-letter");
-            rowText += l ? l : " ";
+            textRow += l ? l : " ";
         });
-        letters.push(rowText.trim());
+        lines.push(textRow.trim());
     });
 
-    const finalText = letters.join(" ").replace(/\s+/g, " ").trim();
+    const finalText = lines.join(" ").replace(/\s+/g, " ").trim();
 
-    const newEnigma = {
-        theme: "PERSONNALISÉ",
-        texte: finalText
-    };
+    if (!finalText) {
+        alert("La grille est vide !");
+        return;
+    }
 
-    // Charge ou crée le JSON
-    const data = JSON.parse(localStorage.getItem("customEnigmas") || "{}");
-
-    if (!data[category]) data[category] = [];
-    data[category].push(newEnigma);
-
-    localStorage.setItem("customEnigmas", JSON.stringify(data));
+    socket.emit("saveEnigma", {
+        theme: theme,
+        texte: finalText,
+        category: category
+    });
 
     alert("Énigme enregistrée !");
-    exitCreationMode();
+    closeCreationPopup();
 }
 
-function exitCreationMode() {
-    creationMode = false;
-    const saveBtn = document.getElementById("save-creation");
-    if (saveBtn) saveBtn.remove();
-    initGrid();
+function loadEnigmes() {
+  try {
+    const data = JSON.parse(fs.readFileSync(enigmesPath, "utf8"));
+
+    return {
+      rapide: data.rapide || [],
+      enigme: data.enigme || [],
+      question: data.question || [],
+      musique: data.musique || [],
+      finale: data.finale || []
+    };
+
+  } catch (e) {
+    return { rapide: [], enigme: [], question: [], musique: [], finale: [] };
+  }
 }
-
-
 
 
 </script>

@@ -79,19 +79,21 @@ io.on("connection", (socket) => {
     console.log(`💾 Nouvelle énigme ajoutée dans ${newData.category}`);
   });
 
-  // Admin demande à supprimer l’énigme jouée
-  socket.on("removeEnigma", ({ category, texte }) => {
-    const data = loadEnigmes();
-    if (!data[category]) return;
+  socket.on("removeEnigma", ({ category, texte, theme }) => {
+  const data = loadEnigmes();
+  if (!data[category]) return;
 
-    // filtre
-    const before = data[category].length;
-    data[category] = data[category].filter(e => e.texte !== texte);
+  const before = data[category].length;
 
-    saveEnigmes(data);
+  data[category] = data[category].filter(e =>
+    !(e.texte === texte && e.theme === theme)
+  );
 
-    console.log(`🗑️ Énigme supprimée (${before} → ${data[category].length})`);
-  });
+  saveEnigmes(data);
+
+  console.log(`🗑️ Énigme supprimée (${before} → ${data[category].length})`);
+});
+
 
   // =========================
   //  Plateau admin
