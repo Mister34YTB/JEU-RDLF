@@ -153,43 +153,6 @@
     }
   </style>
 </head>
-<!-- 🔥 POPUP DE VALIDATION DU THÈME + CATÉGORIE -->
-<div id="save-popup" style="
-  display:none;
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.8);
-  justify-content:center; align-items:center;
-  z-index:99999;
-">
-  <div style="
-    background:black; padding:25px; border:2px solid gold;
-    border-radius:15px; width:400px; text-align:center;
-  ">
-    <h2>Enregistrer l'énigme</h2>
-
-    <label>Thème :</label><br>
-    <input id="save-theme" type="text"
-      style="width:80%; padding:10px; margin:10px 0; font-size:22px; text-transform:uppercase;"><br>
-
-    <label>Catégorie :</label><br>
-    <select id="save-category"
-      style="width:80%; padding:10px; margin:10px 0; font-size:22px;">
-      <option value="rapide">Rapidité</option>
-      <option value="enigme">Énigme</option>
-      <option value="musique">Musique</option>
-      <option value="question">Question</option>
-      <option value="finale">Finale</option>
-    </select>
-
-    <button onclick="saveEnigmaToServer()" style="
-      margin-top:15px; padding:10px 20px; background:green; color:white;
-      font-size:22px; border-radius:10px;">✔ Valider</button>
-
-    <button onclick="closeSavePopup()" style="
-      margin-top:10px; padding:10px 20px; background:red; color:white;
-      font-size:22px; border-radius:10px;">✖ Annuler</button>
-  </div>
-</div>
 
 <body>
   <div id="consonne-msg" style="position: fixed; top: 10px; left: 10px; font-size: 20px; color: yellow;"></div>
@@ -233,21 +196,6 @@
     <div class="row" id="row3"></div>
   </div>
 
-  <button id="saveCreationBtn" onclick="openSavePopup()" 
-style="
-  display:none;
-  margin-top:15px;
-  padding:10px 25px;
-  background:#28a745;
-  font-size:28px;
-  border-radius:10px;
-  color:white;
-  cursor:pointer;
-">
-💾 ENREGISTRER L'ÉNIGME
-</button>
-
-
   <div class="buttons">
     <button onclick="setCategory('rapide')">Rapidité</button>
     <button onclick="setCategory('enigme')">Énigme</button>
@@ -255,7 +203,7 @@ style="
     <button onclick="setCategory('question')">Question</button>
     <button onclick="setCategory('finale')">Finale</button>
     <button onclick="resetUsedEnigmes()">🔄 Réinitialiser</button>
-    <button onclick="openCreationPopup()">✏️ Créer une énigme</button>
+    <button onclick="resetBuzzers()">🔄 Réinitialiser Buzzers</button>
 
 
     <div id="timer"></div>
@@ -287,65 +235,6 @@ style="
 ">
 </div>
 
-<!-- 🧩 POPUP DE CREATION D'ENIGME -->
-<!-- 🧩 POPUP DE CREATION D'ÉNIGME -->
-<div id="creation-popup" style="
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.7);
-  z-index:999999;
-  justify-content:center;
-  align-items:center;
-">
-  <div style="
-    background:black;
-    border:2px solid #FFD700;
-    border-radius:15px;
-    padding:20px;
-    color:white;
-    width:500px;
-    text-align:center;
-  ">
-    <h2>Créer une énigme</h2>
-
-    <p style="font-size:18px; margin-top:10px;">
-      Cliquez dans la grille pour écrire la phrase.
-    </p>
-
-    <button onclick="closeCreationPopup()" style="
-      margin-top:10px;
-      padding:10px 20px;
-      background:#444;
-      color:white;
-      font-size:22px;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
-    ">
-      ✖ Annuler
-    </button>
-  </div>
-</div>
-
-
-    <button onclick="closeCreationPopup()" style="
-      margin-top:10px;
-      padding:10px 20px;
-      background:#444;
-      color:white;
-      font-size:22px;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
-    ">
-      ✖ Annuler
-    </button>
-  </div>
-</div>
-
-
 <script src="/socket.io/socket.io.js"></script>
 
   <script>
@@ -360,6 +249,37 @@ const usedEnigmes = {
 };
 loadUsedEnigmes();
 
+const enigmesRapidité = [
+      { theme: "CHANTAGE", texte: "BLAGUE OU BONBEC ?" },
+      { theme: "7ÈME ART", texte: "LA NUIT DES MORTS-VIVANTS" },
+      { theme: "CREATURE", texte: "LA CHOSE" },
+      { theme: "FRUITS/LEGUMES", texte: "CITROUILLE" },
+      { theme: "LIEUX/MONUMENTS", texte: "SACRAMENTO" },
+      { theme: "LITTERATURE", texte: "THE SHINING" },
+      { theme: "PHOBIE", texte: "L'HEMATOPHOBIE" },
+      { theme: "BONBON", texte: "OEIL GELIFIE" },
+
+
+
+    ];
+
+    const enigmesMusique = [
+      { theme: "MUSIQUE", texte: " <THIS IS HALLOWEEN>" },
+    ];
+
+    const enigmesQuestion = [
+      { theme: "HALLOWEEN", texte: "QUELLE CREATURE SE NOURRIT DE SANG?" },
+    ];
+
+    const enigmesEnigme = [
+      { theme: "AU CINOCHE", texte: "CRIER COMME UNE FILLE DEVANT UN FILM D'HORREUR" },
+      { theme: "EN CAMPING", texte: "RACONTER DES HISTOIRES ULTRA FLIPPANTES" },
+      { theme: "PARANORMAL", texte: "FILMER UN POLTERGEIST DANS SON SALON" }
+    ];
+
+    const enigmesFinale = [
+      { theme: "PERSONNAGE DE FICTION", texte: "GHOSTFACE" },
+    ];
 
 let currentFinale = null;
 let finalePhase = false;
@@ -401,97 +321,86 @@ function setCategory(category) {
   resetLetterAlerts();
   currentCategory = category;
   finalePhase = (category === "finale");
+  playSound("reveal-sound");
 
-  // 🔥 Demande les énigmes de cette catégorie au serveur JSON
-  socket.emit("requestEnigmas", category);
+  let pool;
+  switch (category) {
+    case "rapide": pool = enigmesRapidité; break;
+    case "musique": pool = enigmesMusique; break;
+    case "question": pool = enigmesQuestion; break;
+    case "enigme": pool = enigmesEnigme; break;
+    case "finale": pool = enigmesFinale; break;
+    default: return;
+  }
 
-  // Quand le serveur envoie la liste
-  socket.once("sendEnigmas", (pool) => {
+  const nonJouees = pool.filter(
+    (enigme) => !usedEnigmes[category].includes(enigme.texte)
+  );
 
-      if (!pool || pool.length === 0) {
-          alert("Aucune énigme disponible dans cette catégorie !");
-          return;
+  if (nonJouees.length === 0) {
+    alert(`Toutes les énigmes de la catégorie "${category}" ont été jouées.`);
+    return;
+  }
+
+  const pick = nonJouees[Math.floor(Math.random() * nonJouees.length)];
+  usedEnigmes[category].push(pick.texte);
+  saveUsedEnigmes();
+
+  const words = pick.texte.toUpperCase().split(" ");
+  document.getElementById("theme").innerText = pick.theme.toUpperCase();
+  document.getElementById("theme").style.display = "inline-block";
+
+  initGrid();
+
+  let currentLine = 0;
+  const linesContent = ["", "", "", ""];
+  for (const word of words) {
+    const tentative = (linesContent[currentLine] + " " + word).trim();
+    if (tentative.length <= structure[currentLine]) {
+      linesContent[currentLine] = tentative;
+    } else {
+      currentLine++;
+      if (currentLine >= structure.length) {
+        alert("L'énigme est trop longue pour être affichée.");
+        return;
       }
+      linesContent[currentLine] = word;
+    }
+  }
 
-      // Sélection aléatoire
-      const pick = pool[Math.floor(Math.random() * pool.length)];
+  rapidBoxes = [];
+  rapidLetters = [];
 
-      // 🔥 Supprimer automatiquement l’énigme jouée
-      socket.emit("removeEnigma", {
-          category: category,
-          texte: pick.texte
-      });
-
-      // ============================
-      // 🎨 AFFICHAGE DE L'ÉNIGME
-      // ============================
-
-      playSound("reveal-sound");
-
-      const words = pick.texte.toUpperCase().split(" ");
-
-      document.getElementById("theme").innerText = pick.theme.toUpperCase();
-      document.getElementById("theme").style.display = "inline-block";
-
-      initGrid();
-
-      let currentLine = 0;
-      const linesContent = ["", "", "", ""];
-
-      for (const word of words) {
-          const tentative = (linesContent[currentLine] + " " + word).trim();
-          if (tentative.length <= structure[currentLine]) {
-              linesContent[currentLine] = tentative;
-          } else {
-              currentLine++;
-              if (currentLine >= structure.length) {
-                  alert("L'énigme est trop longue !");
-                  return;
-              }
-              linesContent[currentLine] = word;
-          }
+  for (let i = 0; i < linesContent.length; i++) {
+    const row = document.getElementById(`row${i}`);
+    const boxesInLine = Array.from(row.children);
+    const letters = linesContent[i].split("");
+    const start = Math.floor((structure[i] - letters.length) / 2);
+    for (let j = 0; j < letters.length; j++) {
+      const letter = letters[j];
+      const box = boxesInLine[start + j];
+      if (letter === " ") continue;
+      box.classList.add("white");
+      if (letter.match(/[A-Z]/)) {
+        box.innerText = "";
+        box.setAttribute("data-letter", letter);
+        if (category === "rapide") {
+          rapidBoxes.push(box);
+          rapidLetters.push(letter);
+        }
+      } else {
+        box.innerText = letter;
+        box.style.fontSize = "3.5em";
+        box.style.color = "black";
       }
+    }
+  }
 
-      rapidBoxes = [];
-      rapidLetters = [];
+  document.getElementById("solution").innerText = `💡 Solution : ${pick.texte}`;
 
-      for (let i = 0; i < linesContent.length; i++) {
-          const row = document.getElementById(`row${i}`);
-          const boxesInLine = Array.from(row.children);
-          const letters = linesContent[i].split("");
-          const start = Math.floor((structure[i] - letters.length) / 2);
-
-          for (let j = 0; j < letters.length; j++) {
-              const letter = letters[j];
-              const box = boxesInLine[start + j];
-
-              if (letter === " ") continue;
-
-              box.classList.add("white");
-
-              if (letter.match(/[A-Z]/)) {
-                  box.innerText = "";
-                  box.setAttribute("data-letter", letter);
-
-                  if (category === "rapide") {
-                      rapidBoxes.push(box);
-                      rapidLetters.push(letter);
-                  }
-              } else {
-                  box.innerText = letter;
-                  box.style.fontSize = "3.5em";
-                  box.style.color = "black";
-              }
-          }
-      }
-
-      document.getElementById("solution").innerText =
-          `💡 Solution : ${pick.texte}`;
-
-      socket.emit("updateBoard", {
-          theme: document.getElementById("theme").innerText,
-          grid: document.getElementById("grid").innerHTML
-      });
+  socket.emit("updateBoard", {
+    theme: document.getElementById("theme").innerText,
+    grid: document.getElementById("grid").innerHTML
   });
 }
 
@@ -889,113 +798,6 @@ function invalidateBuzz(playerName) {
   triggerLetterError();      // joue le son erreur
   resetBuzzers();
 }
-
-let creationMode = false;
-let createdLetters = Array(4).fill(null).map(() => []);
-
-
-
-function editBox(box) {
-    const letter = prompt("Entrez une lettre (laisser vide pour supprimer)");
-
-    if (letter === null) return;
-
-    const clean = letter.toUpperCase().replace(/[^A-Z]/g, "").charAt(0);
-
-    if (!clean) {
-        box.innerText = "";
-        box.removeAttribute("data-letter");
-        return;
-    }
-
-    box.innerText = clean;
-    box.setAttribute("data-letter", clean);
-}
-
-/* 🧩 AFFICHER LA POPUP */
-function openCreationPopup() {
-    creationMode = true;
-
-    // Nettoie la grille
-    initGrid();
-
-    // Bouton ENREGISTRER visible
-    document.getElementById("saveCreationBtn").style.display = "block";
-
-    // Activer édition
-    document.querySelectorAll(".box").forEach(box => {
-        box.classList.add("white");
-        box.innerText = "";
-        box.removeAttribute("data-letter");
-        box.onclick = () => editBox(box);
-    });
-}
-function openSavePopup() {
-    document.getElementById("save-popup").style.display = "flex";
-}
-function closeSavePopup() {
-    document.getElementById("save-popup").style.display = "none";
-}
-
-
-/* 🧩 FERMER LA POPUP */
-function closeCreationPopup() {
-    creationMode = false;
-    document.getElementById("creation-popup").style.display = "none";
-}
-
-/* 🧩 ENREGISTRER L'ÉNIGME DANS LE SERVEUR */
-function saveEnigmaToServer() {
-    const theme = document.getElementById("save-theme").value.trim().toUpperCase();
-    const category = document.getElementById("save-category").value;
-
-    if (!theme) return alert("Veuillez entrer un thème !");
-
-    let lines = [];
-    document.querySelectorAll(".row").forEach(row => {
-        let textRow = "";
-        row.querySelectorAll(".box").forEach(box => {
-            const l = box.getAttribute("data-letter");
-            textRow += l ? l : " ";
-        });
-        lines.push(textRow.trim());
-    });
-
-    const finalText = lines.join(" ").replace(/\s+/g, " ").trim();
-    if (!finalText) return alert("La grille est vide !");
-
-    socket.emit("saveEnigma", {
-        theme,
-        texte: finalText,
-        category
-    });
-
-    closeSavePopup();
-
-    document.getElementById("saveCreationBtn").style.display = "none";
-    creationMode = false;
-
-    alert("🎉 Énigme enregistrée !");
-}
-
-
-function loadEnigmes() {
-  try {
-    const data = JSON.parse(fs.readFileSync(enigmesPath, "utf8"));
-
-    return {
-      rapide: data.rapide || [],
-      enigme: data.enigme || [],
-      question: data.question || [],
-      musique: data.musique || [],
-      finale: data.finale || []
-    };
-
-  } catch (e) {
-    return { rapide: [], enigme: [], question: [], musique: [], finale: [] };
-  }
-}
-
 
 </script>
 </body>
