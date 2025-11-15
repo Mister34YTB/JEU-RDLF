@@ -1,12 +1,34 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const fs = require("fs");
 const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// dossier JSON
+const enigmesPath = path.join(__dirname, "data", "enigmes.json");
+
+// Fonction utilitaires JSON
+function loadEnigmes() {
+  try {
+    return JSON.parse(fs.readFileSync(enigmesPath, "utf8"));
+  } catch (e) {
+    return { rapide: [], enigme: [], question: [], musique: [], finale: [] };
+  }
+}
+
+function saveEnigmes(data) {
+  fs.writeFileSync(enigmesPath, JSON.stringify(data, null, 2));
+}
+
+// permettre POST JSON si nécessaire
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Fichiers statiques
 app.use(express.static("public"));
 
 // Routes HTML
@@ -18,8 +40,11 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
-// --- ÉTAT DE LA PARTIE ---
-const players = {}; // { socket.id: { name, color?, role } }
+// =========================
+//  ÉTAT DE LA PARTIE
+// =========================
+
+const players = {};
 let buzzerLocked = false;
 let activeBuzz = null;
 let buzzTimeout = null;
@@ -27,39 +52,83 @@ let buzzTimeout = null;
 io.on("connection", (socket) => {
   console.log("🔗 Nouveau client :", socket.id);
 
-  // ======== ADMIN : Mise à jour du plateau ========
+  // =========================
+  //  🔥 GESTION DES ÉNIGMES JSON
+  // =========================
+
+  // Admin demande les énigmes d’une catégorie
+  socket.on("requestEnigmas", (category) => {
+    const data = loadEnigmes();
+    const list = data[category] || [];
+    socket.emit("sendEnigmas", list);
+  });
+
+  // Admin sauvegarde une nouvelle énigme créée
+  socket.on("saveEnigma", (newData) => {
+    const data = loadEnigmes();
+
+    if (!data[newData.category]) data[newData.category] = [];
+
+    data[newData.category].push({
+      theme: newData.theme,
+      texte: newData.texte
+    });
+
+    saveEnigmes(data);
+
+    console.log(`💾 Nouvelle énigme ajoutée dans ${newData.category}`);
+  });
+
+  // Admin demande à supprimer l’énigme jouée
+  socket.on("removeEnigma", ({ category, texte }) => {
+    const data = loadEnigmes();
+    if (!data[category]) return;
+
+    // filtre
+    const before = data[category].length;
+    data[category] = data[category].filter(e => e.texte !== texte);
+
+    saveEnigmes(data);
+
+    console.log(`🗑️ Énigme supprimée (${before} → ${data[category].length})`);
+  });
+
+  // =========================
+  //  Plateau admin
+  // =========================
+
   socket.on("updateBoard", (data) => {
-    console.log(`📢 Thème: ${data.theme}`);
     io.emit("boardUpdate", data);
   });
 
-  // === Relais des actions globales ===
   socket.on("revealLetters", (letters) => io.emit("revealLetters", letters));
   socket.on("revealAll", () => io.emit("revealAll"));
   socket.on("playSound", (id) => io.emit("playSound", id));
   socket.on("letterError", () => io.emit("letterError"));
 
-  // === Compte à rebours global ===
   socket.on("startCountdown", () => {
-    console.log("⏱️ Début du compte à rebours");
     io.emit("startCountdown");
   });
 
-  // === JOUEUR ou spectateur -> serveur : inscription ===
+  // =========================
+  //  INSCRIPTION JOUEUR
+  // =========================
+
   socket.on("registerPlayer", ({ name, color, role }) => {
     if (role === "spectator") {
       players[socket.id] = { name, role: "spectator" };
-      console.log(`👀 Spectateur inscrit : ${name}`);
     } else {
       if (!color) return;
       players[socket.id] = { name, color, role: "player" };
-      console.log(`✅ Joueur inscrit : ${name} (${color})`);
     }
 
     io.emit("playersUpdate", Object.values(players));
   });
 
-  // === Buzz ===
+  // =========================
+  //  SYSTÈME DE BUZZER
+  // =========================
+
   socket.on("buzz", () => {
     const p = players[socket.id];
     if (!p || p.role !== "player" || buzzerLocked) return;
@@ -67,14 +136,12 @@ io.on("connection", (socket) => {
     buzzerLocked = true;
     activeBuzz = socket.id;
 
-    console.log(`🚨 ${p.name} a buzzé (${p.color}) !`);
     io.emit("buzzed", { playerName: p.name, color: p.color });
     io.emit("playSound", "buzz-sound");
     io.emit("lockOtherBuzzers", socket.id);
 
     clearTimeout(buzzTimeout);
     buzzTimeout = setTimeout(() => {
-      console.log(`⏱ Temps écoulé pour ${p.name}, mauvaise réponse auto`);
       io.emit("letterError");
       io.emit("reactivateBuzzers", { exclude: socket.id });
       buzzerLocked = false;
@@ -82,46 +149,44 @@ io.on("connection", (socket) => {
     }, 5000);
   });
 
-  // === ADMIN : Validation du buzz ===
   socket.on("validateBuzz", () => {
-    if (activeBuzz) console.log(`✅ Bonne réponse pour ${players[activeBuzz]?.name}`);
     clearTimeout(buzzTimeout);
     buzzerLocked = false;
     activeBuzz = null;
     io.emit("resetBuzzers");
   });
 
-  // === ADMIN : Mauvaise réponse ===
   socket.on("invalidateBuzz", () => {
-    if (activeBuzz) {
-      console.log(`❌ Mauvaise réponse pour ${players[activeBuzz]?.name}`);
-      io.emit("letterError");
-      io.emit("reactivateBuzzers", { exclude: activeBuzz });
-    }
+    io.emit("letterError");
+    io.emit("reactivateBuzzers", { exclude: activeBuzz });
     clearTimeout(buzzTimeout);
     buzzerLocked = false;
     activeBuzz = null;
   });
 
-  // === ADMIN : Reset des buzzers ===
   socket.on("resetBuzzers", () => {
     buzzerLocked = false;
     activeBuzz = null;
     clearTimeout(buzzTimeout);
     io.emit("resetBuzzers");
-    console.log("🔄 Reset des buzzers");
   });
 
-  // === Déconnexion ===
+  // =========================
+  //  Déconnexion
+  // =========================
+
   socket.on("disconnect", () => {
     const p = players[socket.id];
     if (p) {
-      console.log(`❌ ${p.name} (${p.role}) s’est déconnecté`);
       delete players[socket.id];
       io.emit("playersUpdate", Object.values(players));
     }
   });
 });
+
+// =========================
+//  Lancement serveur
+// =========================
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

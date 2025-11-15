@@ -203,7 +203,7 @@
     <button onclick="setCategory('question')">Question</button>
     <button onclick="setCategory('finale')">Finale</button>
     <button onclick="resetUsedEnigmes()">🔄 Réinitialiser</button>
-    <button onclick="resetBuzzers()">🔄 Réinitialiser Buzzers</button>
+    <button onclick="enterCreationMode()">✏️ Créer une énigme</button>
 
 
     <div id="timer"></div>
@@ -249,37 +249,6 @@ const usedEnigmes = {
 };
 loadUsedEnigmes();
 
-const enigmesRapidité = [
-      { theme: "CHANTAGE", texte: "BLAGUE OU BONBEC ?" },
-      { theme: "7ÈME ART", texte: "LA NUIT DES MORTS-VIVANTS" },
-      { theme: "CREATURE", texte: "LA CHOSE" },
-      { theme: "FRUITS/LEGUMES", texte: "CITROUILLE" },
-      { theme: "LIEUX/MONUMENTS", texte: "SACRAMENTO" },
-      { theme: "LITTERATURE", texte: "THE SHINING" },
-      { theme: "PHOBIE", texte: "L'HEMATOPHOBIE" },
-      { theme: "BONBON", texte: "OEIL GELIFIE" },
-
-
-
-    ];
-
-    const enigmesMusique = [
-      { theme: "MUSIQUE", texte: " <THIS IS HALLOWEEN>" },
-    ];
-
-    const enigmesQuestion = [
-      { theme: "HALLOWEEN", texte: "QUELLE CREATURE SE NOURRIT DE SANG?" },
-    ];
-
-    const enigmesEnigme = [
-      { theme: "AU CINOCHE", texte: "CRIER COMME UNE FILLE DEVANT UN FILM D'HORREUR" },
-      { theme: "EN CAMPING", texte: "RACONTER DES HISTOIRES ULTRA FLIPPANTES" },
-      { theme: "PARANORMAL", texte: "FILMER UN POLTERGEIST DANS SON SALON" }
-    ];
-
-    const enigmesFinale = [
-      { theme: "PERSONNAGE DE FICTION", texte: "GHOSTFACE" },
-    ];
 
 let currentFinale = null;
 let finalePhase = false;
@@ -318,29 +287,28 @@ function initGrid() {
 initGrid();
 
 function setCategory(category) {
-  resetLetterAlerts();
-  currentCategory = category;
-  finalePhase = (category === "finale");
-  playSound("reveal-sound");
+    resetLetterAlerts();
+    currentCategory = category;
 
-  let pool;
-  switch (category) {
-    case "rapide": pool = enigmesRapidité; break;
-    case "musique": pool = enigmesMusique; break;
-    case "question": pool = enigmesQuestion; break;
-    case "enigme": pool = enigmesEnigme; break;
-    case "finale": pool = enigmesFinale; break;
-    default: return;
-  }
+    let pool;
 
-  const nonJouees = pool.filter(
-    (enigme) => !usedEnigmes[category].includes(enigme.texte)
-  );
+    // Enigmes par défaut
+    switch (category) {
+        case "rapide": pool = [...enigmesRapidité]; break;
+        case "musique": pool = [...enigmesMusique]; break;
+        case "question": pool = [...enigmesQuestion]; break;
+        case "enigme": pool = [...enigmesEnigme]; break;
+        case "finale": pool = [...enigmesFinale]; break;
+    }
 
-  if (nonJouees.length === 0) {
-    alert(`Toutes les énigmes de la catégorie "${category}" ont été jouées.`);
-    return;
-  }
+    // Ajout des énigmes créées
+    const custom = JSON.parse(localStorage.getItem("customEnigmas") || "{}");
+    if (custom[category]) {
+        pool = pool.concat(custom[category]);
+    }
+
+    // ... (le reste de ton code identique)
+
 
   const pick = nonJouees[Math.floor(Math.random() * nonJouees.length)];
   usedEnigmes[category].push(pick.texte);
@@ -403,6 +371,13 @@ function setCategory(category) {
     grid: document.getElementById("grid").innerHTML
   });
 }
+
+// 🔥 Supprime l’énigme jouée du JSON côté serveur
+socket.emit("removeEnigma", {
+    category: category,
+    texte: pick.texte
+});
+
 
 function toggleRapidReveal() {
   if (isRevealing) {
@@ -798,6 +773,112 @@ function invalidateBuzz(playerName) {
   triggerLetterError();      // joue le son erreur
   resetBuzzers();
 }
+
+let creationMode = false;
+let createdLetters = Array(4).fill(null).map(() => []);
+
+function enterCreationMode() {
+    creationMode = true;
+    document.getElementById("theme").style.display = "none";
+    document.getElementById("solution").innerText = "";
+    resetLetterAlerts();
+    initGrid();
+
+    // Efface les attributs data-letter
+    document.querySelectorAll(".box").forEach(box => {
+        box.classList.add("white");
+        box.innerText = "";
+        box.removeAttribute("data-letter");
+
+        // Ajoute le clic pour écrire une lettre
+        box.onclick = () => editBox(box);
+    });
+
+    showSaveButton();
+}
+
+function editBox(box) {
+    const letter = prompt("Entrez une lettre (laisser vide pour supprimer)");
+
+    if (letter === null) return;
+
+    const clean = letter.toUpperCase().replace(/[^A-Z]/g, "").charAt(0);
+
+    if (!clean) {
+        box.innerText = "";
+        box.removeAttribute("data-letter");
+        return;
+    }
+
+    box.innerText = clean;
+    box.setAttribute("data-letter", clean);
+}
+
+function showSaveButton() {
+    if (document.getElementById("save-creation")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "save-creation";
+    btn.innerText = "💾 ENREGISTRER L'ÉNIGME";
+    btn.style = "padding:15px;font-size:25px;background:#28a745;color:white;border-radius:10px;margin-top:20px;";
+    btn.onclick = saveEnigma;
+
+    document.body.appendChild(btn);
+}
+
+function saveEnigma() {
+    const category = prompt(
+        "Choisissez une catégorie :\n" +
+        "rapide / enigme / question / musique / finale"
+    );
+
+    const valid = ["rapide", "enigme", "question", "musique", "finale"];
+
+    if (!valid.includes(category)) {
+        alert("Catégorie invalide !");
+        return;
+    }
+
+    const letters = [];
+    const rows = [12, 14, 14, 12];
+
+    document.querySelectorAll(".row").forEach(row => {
+        let rowText = "";
+        row.querySelectorAll(".box").forEach(box => {
+            const l = box.getAttribute("data-letter");
+            rowText += l ? l : " ";
+        });
+        letters.push(rowText.trim());
+    });
+
+    const finalText = letters.join(" ").replace(/\s+/g, " ").trim();
+
+    const newEnigma = {
+        theme: "PERSONNALISÉ",
+        texte: finalText
+    };
+
+    // Charge ou crée le JSON
+    const data = JSON.parse(localStorage.getItem("customEnigmas") || "{}");
+
+    if (!data[category]) data[category] = [];
+    data[category].push(newEnigma);
+
+    localStorage.setItem("customEnigmas", JSON.stringify(data));
+
+    alert("Énigme enregistrée !");
+    exitCreationMode();
+}
+
+function exitCreationMode() {
+    creationMode = false;
+    const saveBtn = document.getElementById("save-creation");
+    if (saveBtn) saveBtn.remove();
+    initGrid();
+}
+
+
+
 
 </script>
 </body>
