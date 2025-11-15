@@ -153,6 +153,43 @@
     }
   </style>
 </head>
+<!-- 🔥 POPUP DE VALIDATION DU THÈME + CATÉGORIE -->
+<div id="save-popup" style="
+  display:none;
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.8);
+  justify-content:center; align-items:center;
+  z-index:99999;
+">
+  <div style="
+    background:black; padding:25px; border:2px solid gold;
+    border-radius:15px; width:400px; text-align:center;
+  ">
+    <h2>Enregistrer l'énigme</h2>
+
+    <label>Thème :</label><br>
+    <input id="save-theme" type="text"
+      style="width:80%; padding:10px; margin:10px 0; font-size:22px; text-transform:uppercase;"><br>
+
+    <label>Catégorie :</label><br>
+    <select id="save-category"
+      style="width:80%; padding:10px; margin:10px 0; font-size:22px;">
+      <option value="rapide">Rapidité</option>
+      <option value="enigme">Énigme</option>
+      <option value="musique">Musique</option>
+      <option value="question">Question</option>
+      <option value="finale">Finale</option>
+    </select>
+
+    <button onclick="saveEnigmaToServer()" style="
+      margin-top:15px; padding:10px 20px; background:green; color:white;
+      font-size:22px; border-radius:10px;">✔ Valider</button>
+
+    <button onclick="closeSavePopup()" style="
+      margin-top:10px; padding:10px 20px; background:red; color:white;
+      font-size:22px; border-radius:10px;">✖ Annuler</button>
+  </div>
+</div>
 
 <body>
   <div id="consonne-msg" style="position: fixed; top: 10px; left: 10px; font-size: 20px; color: yellow;"></div>
@@ -292,46 +329,7 @@ style="
       Cliquez dans la grille pour écrire la phrase.
     </p>
 
-    <div id="save-popup" style="
-  display:none;
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.8);
-  justify-content:center; align-items:center;
-  z-index:99999;
-">
-  <div style="
-    background:black; padding:25px; border:2px solid gold;
-    border-radius:15px; width:400px; text-align:center;
-  ">
-    <h2>Enregistrer l'énigme</h2>
-
-    <label>Thème :</label><br>
-    <input id="save-theme" type="text"
-      style="width:80%; padding:10px; margin:10px 0; font-size:22px; text-transform:uppercase;">
-    <br>
-
-    <label>Catégorie :</label><br>
-    <select id="save-category"
-      style="width:80%; padding:10px; margin:10px 0; font-size:22px;">
-      <option value="rapide">Rapidité</option>
-      <option value="enigme">Énigme</option>
-      <option value="musique">Musique</option>
-      <option value="question">Question</option>
-      <option value="finale">Finale</option>
-    </select>
-
-    <button onclick="saveEnigmaToServer()" style="
-      margin-top:15px; padding:10px 20px; background:green; color:white;
-      font-size:22px; border-radius:10px;">✔ Valider</button>
-
-    <button onclick="closeSavePopup()" style="
-      margin-top:10px; padding:10px 20px; background:red; color:white;
-      font-size:22px; border-radius:10px;">✖ Annuler</button>
-  </div>
-</div>
-
-
-    
+  
 
     <button onclick="saveEnigmaToServer()" style="
       margin-top:15px;
