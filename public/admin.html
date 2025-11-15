@@ -196,6 +196,21 @@
     <div class="row" id="row3"></div>
   </div>
 
+  <button id="saveCreationBtn" onclick="openSavePopup()" 
+style="
+  display:none;
+  margin-top:15px;
+  padding:10px 25px;
+  background:#28a745;
+  font-size:28px;
+  border-radius:10px;
+  color:white;
+  cursor:pointer;
+">
+💾 ENREGISTRER L'ÉNIGME
+</button>
+
+
   <div class="buttons">
     <button onclick="setCategory('rapide')">Rapidité</button>
     <button onclick="setCategory('enigme')">Énigme</button>
@@ -276,6 +291,47 @@
     <p style="font-size:18px; margin-top:10px;">
       Cliquez dans la grille pour écrire la phrase.
     </p>
+
+    <div id="save-popup" style="
+  display:none;
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.8);
+  justify-content:center; align-items:center;
+  z-index:99999;
+">
+  <div style="
+    background:black; padding:25px; border:2px solid gold;
+    border-radius:15px; width:400px; text-align:center;
+  ">
+    <h2>Enregistrer l'énigme</h2>
+
+    <label>Thème :</label><br>
+    <input id="save-theme" type="text"
+      style="width:80%; padding:10px; margin:10px 0; font-size:22px; text-transform:uppercase;">
+    <br>
+
+    <label>Catégorie :</label><br>
+    <select id="save-category"
+      style="width:80%; padding:10px; margin:10px 0; font-size:22px;">
+      <option value="rapide">Rapidité</option>
+      <option value="enigme">Énigme</option>
+      <option value="musique">Musique</option>
+      <option value="question">Question</option>
+      <option value="finale">Finale</option>
+    </select>
+
+    <button onclick="saveEnigmaToServer()" style="
+      margin-top:15px; padding:10px 20px; background:green; color:white;
+      font-size:22px; border-radius:10px;">✔ Valider</button>
+
+    <button onclick="closeSavePopup()" style="
+      margin-top:10px; padding:10px 20px; background:red; color:white;
+      font-size:22px; border-radius:10px;">✖ Annuler</button>
+  </div>
+</div>
+
+
+    
 
     <button onclick="saveEnigmaToServer()" style="
       margin-top:15px;
@@ -875,11 +931,14 @@ function editBox(box) {
 /* 🧩 AFFICHER LA POPUP */
 function openCreationPopup() {
     creationMode = true;
-    document.getElementById("creation-theme").value = "";
-    document.getElementById("creation-popup").style.display = "flex";
 
+    // Nettoie la grille
     initGrid();
 
+    // Bouton ENREGISTRER visible
+    document.getElementById("saveCreationBtn").style.display = "block";
+
+    // Activer édition
     document.querySelectorAll(".box").forEach(box => {
         box.classList.add("white");
         box.innerText = "";
@@ -887,6 +946,13 @@ function openCreationPopup() {
         box.onclick = () => editBox(box);
     });
 }
+function openSavePopup() {
+    document.getElementById("save-popup").style.display = "flex";
+}
+function closeSavePopup() {
+    document.getElementById("save-popup").style.display = "none";
+}
+
 
 /* 🧩 FERMER LA POPUP */
 function closeCreationPopup() {
@@ -896,15 +962,12 @@ function closeCreationPopup() {
 
 /* 🧩 ENREGISTRER L'ÉNIGME DANS LE SERVEUR */
 function saveEnigmaToServer() {
-    const theme = document.getElementById("creation-theme").value.trim().toUpperCase();
-    const category = document.getElementById("creation-category").value;
+    const theme = document.getElementById("save-theme").value.trim().toUpperCase();
+    const category = document.getElementById("save-category").value;
 
-    if (!theme) {
-        alert("Veuillez entrer un thème !");
-        return;
-    }
+    if (!theme) return alert("Veuillez entrer un thème !");
 
-    const lines = [];
+    let lines = [];
     document.querySelectorAll(".row").forEach(row => {
         let textRow = "";
         row.querySelectorAll(".box").forEach(box => {
@@ -915,21 +978,22 @@ function saveEnigmaToServer() {
     });
 
     const finalText = lines.join(" ").replace(/\s+/g, " ").trim();
-
-    if (!finalText) {
-        alert("La grille est vide !");
-        return;
-    }
+    if (!finalText) return alert("La grille est vide !");
 
     socket.emit("saveEnigma", {
-        theme: theme,
+        theme,
         texte: finalText,
-        category: category
+        category
     });
 
-    alert("Énigme enregistrée !");
-    closeCreationPopup();
+    closeSavePopup();
+
+    document.getElementById("saveCreationBtn").style.display = "none";
+    creationMode = false;
+
+    alert("🎉 Énigme enregistrée !");
 }
+
 
 function loadEnigmes() {
   try {
