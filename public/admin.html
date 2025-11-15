@@ -287,97 +287,102 @@ function initGrid() {
 initGrid();
 
 function setCategory(category) {
-    resetLetterAlerts();
-    currentCategory = category;
+  resetLetterAlerts();
+  currentCategory = category;
+  finalePhase = (category === "finale");
 
-    let pool;
+  // 🔥 Demande les énigmes de cette catégorie au serveur JSON
+  socket.emit("requestEnigmas", category);
 
-    // Enigmes par défaut
-    switch (category) {
-        case "rapide": pool = [...enigmesRapidité]; break;
-        case "musique": pool = [...enigmesMusique]; break;
-        case "question": pool = [...enigmesQuestion]; break;
-        case "enigme": pool = [...enigmesEnigme]; break;
-        case "finale": pool = [...enigmesFinale]; break;
-    }
+  // Quand le serveur envoie la liste
+  socket.once("sendEnigmas", (pool) => {
 
-    // Ajout des énigmes créées
-    const custom = JSON.parse(localStorage.getItem("customEnigmas") || "{}");
-    if (custom[category]) {
-        pool = pool.concat(custom[category]);
-    }
-
-    // ... (le reste de ton code identique)
-
-
-  const pick = nonJouees[Math.floor(Math.random() * nonJouees.length)];
-  usedEnigmes[category].push(pick.texte);
-  saveUsedEnigmes();
-
-  const words = pick.texte.toUpperCase().split(" ");
-  document.getElementById("theme").innerText = pick.theme.toUpperCase();
-  document.getElementById("theme").style.display = "inline-block";
-
-  initGrid();
-
-  let currentLine = 0;
-  const linesContent = ["", "", "", ""];
-  for (const word of words) {
-    const tentative = (linesContent[currentLine] + " " + word).trim();
-    if (tentative.length <= structure[currentLine]) {
-      linesContent[currentLine] = tentative;
-    } else {
-      currentLine++;
-      if (currentLine >= structure.length) {
-        alert("L'énigme est trop longue pour être affichée.");
-        return;
+      if (!pool || pool.length === 0) {
+          alert("Aucune énigme disponible dans cette catégorie !");
+          return;
       }
-      linesContent[currentLine] = word;
-    }
-  }
 
-  rapidBoxes = [];
-  rapidLetters = [];
+      // Sélection aléatoire
+      const pick = pool[Math.floor(Math.random() * pool.length)];
 
-  for (let i = 0; i < linesContent.length; i++) {
-    const row = document.getElementById(`row${i}`);
-    const boxesInLine = Array.from(row.children);
-    const letters = linesContent[i].split("");
-    const start = Math.floor((structure[i] - letters.length) / 2);
-    for (let j = 0; j < letters.length; j++) {
-      const letter = letters[j];
-      const box = boxesInLine[start + j];
-      if (letter === " ") continue;
-      box.classList.add("white");
-      if (letter.match(/[A-Z]/)) {
-        box.innerText = "";
-        box.setAttribute("data-letter", letter);
-        if (category === "rapide") {
-          rapidBoxes.push(box);
-          rapidLetters.push(letter);
-        }
-      } else {
-        box.innerText = letter;
-        box.style.fontSize = "3.5em";
-        box.style.color = "black";
+      // 🔥 Supprimer automatiquement l’énigme jouée
+      socket.emit("removeEnigma", {
+          category: category,
+          texte: pick.texte
+      });
+
+      // ============================
+      // 🎨 AFFICHAGE DE L'ÉNIGME
+      // ============================
+
+      playSound("reveal-sound");
+
+      const words = pick.texte.toUpperCase().split(" ");
+
+      document.getElementById("theme").innerText = pick.theme.toUpperCase();
+      document.getElementById("theme").style.display = "inline-block";
+
+      initGrid();
+
+      let currentLine = 0;
+      const linesContent = ["", "", "", ""];
+
+      for (const word of words) {
+          const tentative = (linesContent[currentLine] + " " + word).trim();
+          if (tentative.length <= structure[currentLine]) {
+              linesContent[currentLine] = tentative;
+          } else {
+              currentLine++;
+              if (currentLine >= structure.length) {
+                  alert("L'énigme est trop longue !");
+                  return;
+              }
+              linesContent[currentLine] = word;
+          }
       }
-    }
-  }
 
-  document.getElementById("solution").innerText = `💡 Solution : ${pick.texte}`;
+      rapidBoxes = [];
+      rapidLetters = [];
 
-  socket.emit("updateBoard", {
-    theme: document.getElementById("theme").innerText,
-    grid: document.getElementById("grid").innerHTML
+      for (let i = 0; i < linesContent.length; i++) {
+          const row = document.getElementById(`row${i}`);
+          const boxesInLine = Array.from(row.children);
+          const letters = linesContent[i].split("");
+          const start = Math.floor((structure[i] - letters.length) / 2);
+
+          for (let j = 0; j < letters.length; j++) {
+              const letter = letters[j];
+              const box = boxesInLine[start + j];
+
+              if (letter === " ") continue;
+
+              box.classList.add("white");
+
+              if (letter.match(/[A-Z]/)) {
+                  box.innerText = "";
+                  box.setAttribute("data-letter", letter);
+
+                  if (category === "rapide") {
+                      rapidBoxes.push(box);
+                      rapidLetters.push(letter);
+                  }
+              } else {
+                  box.innerText = letter;
+                  box.style.fontSize = "3.5em";
+                  box.style.color = "black";
+              }
+          }
+      }
+
+      document.getElementById("solution").innerText =
+          `💡 Solution : ${pick.texte}`;
+
+      socket.emit("updateBoard", {
+          theme: document.getElementById("theme").innerText,
+          grid: document.getElementById("grid").innerHTML
+      });
   });
 }
-
-// 🔥 Supprime l’énigme jouée du JSON côté serveur
-socket.emit("removeEnigma", {
-    category: category,
-    texte: pick.texte
-});
-
 
 function toggleRapidReveal() {
   if (isRevealing) {
