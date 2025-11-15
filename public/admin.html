@@ -288,10 +288,12 @@ style="
 </div>
 
 <!-- 🧩 POPUP DE CREATION D'ENIGME -->
+<<!-- 🧩 POPUP DE CREATION D'ÉNIGME -->
 <div id="creation-popup" style="
   display:none;
   position:fixed;
-  top:0; left:0; width:100%; height:100%;
+  top:0; left:0;
+  width:100%; height:100%;
   background:rgba(0,0,0,0.7);
   z-index:999999;
   justify-content:center;
@@ -308,41 +310,25 @@ style="
   ">
     <h2>Créer une énigme</h2>
 
-    <label>Thème :</label><br>
-    <input id="creation-theme" type="text" placeholder="Ex : ANIMAUX" style="
-      width:80%; padding:10px; font-size:20px; margin:5px;
-      text-transform:uppercase;
-    "><br>
-
-    <label>Catégorie :</label><br>
-    <select id="creation-category" style="
-      width:80%; padding:10px; font-size:20px; margin:5px;
-    ">
-      <option value="rapide">Rapidité</option>
-      <option value="enigme">Énigme</option>
-      <option value="musique">Musique</option>
-      <option value="question">Question</option>
-      <option value="finale">Finale</option>
-    </select>
-
     <p style="font-size:18px; margin-top:10px;">
       Cliquez dans la grille pour écrire la phrase.
     </p>
 
-  
-
-    <button onclick="saveEnigmaToServer()" style="
-      margin-top:15px;
+    <button onclick="closeCreationPopup()" style="
+      margin-top:10px;
       padding:10px 20px;
-      background:#28a745;
+      background:#444;
       color:white;
       font-size:22px;
       border:none;
       border-radius:10px;
       cursor:pointer;
     ">
-      💾 ENREGISTRER
+      ✖ Annuler
     </button>
+  </div>
+</div>
+
 
     <button onclick="closeCreationPopup()" style="
       margin-top:10px;
